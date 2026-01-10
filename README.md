@@ -12,7 +12,7 @@ O script principal, `gerar_relatorio.py`, realiza as seguintes tarefas:
 
 ## Estrutura do Projeto
 
-.
+
 ├── drivers/
 │ └── Microsoft.AnalysisServices.AdomdClient.dll (Adicionar manualmente)
 ├── queries/
