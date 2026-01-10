@@ -10,33 +10,6 @@ O script principal, `gerar_relatorio.py`, realiza as seguintes tarefas:
 3.  Gera um relatório HTML interativo para uma unidade de negócio específica.
 4.  O relatório inclui uma visão geral com KPIs, gráficos de evolução mensal e tabelas analíticas trimestrais.
 
-## Estrutura do Projeto
-
-├── drivers/
-│ └── Microsoft.AnalysisServices.AdomdClient.dll (Adicionar manualmente)
-├── queries/
-│ ├── cc.sql
-│ └── nacional.sql
-├── processamento/
-│ ├── correcao_chaves.py
-│ ├── correcao_dados.py
-│ ├── enriquecimento.py
-│ └── validacao.py
-├── .env (Arquivo local para segredos)
-├── .env.example (Template do arquivo .env)
-├── .gitignore
-├── config.py
-├── database.py
-├── extracao.py
-├── gerar_relatorio.py (Script principal para os relatórios HTML)
-├── inicializacao.py
-├── logger_config.py
-├── main.py (Script original do robô de enriquecimento)
-├── mapa_correcoes.json
-├── README.md
-├── requirements.txt
-└── utils.py
-
 
 ## Instalação
 
