@@ -2,7 +2,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, Final
+from typing import Any, Dict, Final
 
 from dotenv import load_dotenv
 
@@ -13,6 +13,7 @@ load_dotenv()
 @dataclass(frozen=True)
 class PathsConfig:
     """Centraliza todos os caminhos de arquivos usados no projeto."""
+
     base_dir: Path = Path(__file__).parent
     query_nacional: Path = base_dir / "queries" / "nacional.sql"
     query_cc: Path = base_dir / "queries" / "cc.sql"
@@ -24,6 +25,7 @@ class PathsConfig:
 @dataclass(frozen=True)
 class DbConfig:
     """Define a estrutura para uma configuração de banco de dados."""
+
     tipo: str
     driver: str | None = None
     servidor: str | None = None
@@ -39,6 +41,7 @@ class DbConfig:
 @dataclass(frozen=True)
 class AppConfig:
     """Agrega todas as configurações da aplicação."""
+
     paths: PathsConfig
     conexoes: Dict[str, DbConfig]
 
@@ -55,39 +58,41 @@ def get_config() -> AppConfig:
             tipo="sql",
             servidor=os.getenv("DB_SERVER_HUB"),
             banco=os.getenv("DB_DATABASE_HUB"),
-            driver="ODBC Driver 17 for SQL Server",
+            # CORREÇÃO: Alterado para a versão 18 do driver ODBC.
+            driver="ODBC Driver 18 for SQL Server",
         ),
         "FINANCA_SQL": DbConfig(
             tipo="sql",
             servidor=os.getenv("DB_SERVER_FINANCA"),
             banco=os.getenv("DB_DATABASE_FINANCA"),
-            driver="ODBC Driver 17 for SQL Server",
+            # CORREÇÃO: Alterado para a versão 18 do driver ODBC.
+            driver="ODBC Driver 18 for SQL Server",
         ),
-        "CacheDB": DbConfig(
-            tipo="sqlite",
-            caminho=paths.cache_db
-        ),
-        "OLAP": DbConfig( # Inclui a configuração OLAP
+        "CacheDB": DbConfig(tipo="sqlite", caminho=paths.cache_db),
+        "OLAP": DbConfig(  # Inclui a configuração OLAP
             tipo="olap",
             provider=os.getenv("OLAP_PROVIDER"),
             data_source=os.getenv("OLAP_SOURCE"),
             catalog=os.getenv("OLAP_CATALOG"),
-        )
+        ),
     }
 
     # Validação crítica para garantir que as variáveis de ambiente foram carregadas
-    # Adicionando validação para OLAP também, se as variáveis existirem no .env
-    if (not conexoes["HubDados"].servidor or not conexoes["FINANCA_SQL"].servidor):
+    if not conexoes["HubDados"].servidor or not conexoes["FINANCA_SQL"].servidor:
         raise ValueError(
             "Erro crítico: Variáveis de ambiente essenciais para conexões SQL (DB_SERVER_HUB, DB_SERVER_FINANCA) "
             "não foram definidas no arquivo .env."
         )
-    
-    # Se a conexão OLAP for definida e as variáveis não estiverem completas, lançar erro
-    if conexoes["OLAP"].tipo == "olap" and (not conexoes["OLAP"].provider or not conexoes["OLAP"].data_source or not conexoes["OLAP"].catalog):
+
+    # Validação para OLAP (se definido)
+    if conexoes["OLAP"].tipo == "olap" and (
+        not conexoes["OLAP"].provider
+        or not conexoes["OLAP"].data_source
+        or not conexoes["OLAP"].catalog
+    ):
         raise ValueError(
-            "Erro crítico: Variáveis de ambiente essenciais para conexão OLAP (OLAP_PROVIDER, OLAP_SOURCE, OLAP_CATALOG) "
-            "não foram definidas no arquivo .env."
+            "Erro crítico: Variáveis de ambiente para conexão OLAP (OLAP_PROVIDER, OLAP_SOURCE, OLAP_CATALOG) "
+            "não foram completamente definidas no arquivo .env."
         )
 
     return AppConfig(paths=paths, conexoes=conexoes)
@@ -95,4 +100,3 @@ def get_config() -> AppConfig:
 
 # Instância única de configuração para ser importada em outros módulos.
 CONFIG: Final[AppConfig] = get_config()
-

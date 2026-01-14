@@ -23,15 +23,15 @@ def get_conexao(config: DbConfig) -> Conexao:
     logger.info("Criando conexão do tipo '%s' para '%s'...", config.tipo, destino_log)
 
     if config.tipo == "sql":
+        # CORREÇÃO: Adicionado 'Encrypt=no' para compatibilidade com o Driver 18.
         conn_str = (
             "mssql+pyodbc:///?odbc_connect="
             f"DRIVER={{{config.driver}}};"
             f"SERVER={config.servidor};"
             f"DATABASE={config.banco};"
             "Trusted_Connection=yes;"
+            "Encrypt=no;"  # Adicione esta linha
         )
-        # *** GARANTA QUE ESTA LINHA ESTEJA PRESENTE E ATIVA ***
-        # Combina a inserção em massa com a nossa estratégia de chunking manual.
         return create_engine(conn_str, fast_executemany=True)
 
     elif config.tipo == "olap":
@@ -39,14 +39,20 @@ def get_conexao(config: DbConfig) -> Conexao:
             f"Provider={config.provider};"
             f"Data Source={config.data_source};"
             f"Initial Catalog={config.catalog};"
+            "Trusted_Connection=yes;"
         )
-        return Pyadomd(conn_str)
+        try:
+            conn = Pyadomd(conn_str)
+            conn.open()
+            logger.info("Conexão OLAP aberta com sucesso.")
+            return conn
+        except Exception as e:
+            logger.exception("Falha ao abrir conexão OLAP.")
+            raise e
 
     elif config.tipo == "sqlite":
         conn_str = f"sqlite:///{config.caminho}"
         return create_engine(conn_str)
 
     else:
-        raise ValueError(
-            f"Tipo de conexão desconhecido: '{config.tipo}'."
-        )
+        raise ValueError(f"Tipo de conexão desconhecido: '{config.tipo}'.")
