@@ -20,7 +20,7 @@ ENV/
 cache_dados.db
 
 # Saídas geradas pelo script
-*.html
+
 *.png
 *.json
 
