@@ -5,35 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório: {unidade_alvo}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="./static/style.css"> <!-- Referência ao CSS -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* CORREÇÃO: Chaves duplas foram escapadas para o .format() do Python */
+        body {{{{ font-family: Arial, sans-serif; padding: 15px; background-color: #f8f9fa; }}}}
+        h1, h2, h3, h4 {{{{ color: #004085; }}}}
+        .card {{{{ margin-top: 20px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); }}}}
+        .card-header {{{{ background-color: #004085; color: white; font-weight: bold; }}}}
+        .kpi-values-box {{{{ display: flex; justify-content: space-around; padding: 10px 0; }}}}
+        .kpi-box {{{{ text-align: center; border-top: 1px solid #dee2e6; padding: 10px 0; }}}}
+        .kpi-value {{{{ font-size: 1.8rem; font-weight: bold; color: #004085; }}}}
+        .kpi-label {{{{ font-size: 0.9rem; color: #6c757d; text-transform: uppercase; }}}}
+        .kpi-financial-value {{{{ font-size: 1.5rem; font-weight: bold; }}}}
+        .kpi-financial-label {{{{ font-size: 0.8rem; color: #6c757d; text-transform: uppercase; }}}}
+        .green-text {{{{ color: #28a745; }}}}
+        .blue-text {{{{ color: #007bff; }}}}
+        .table-responsive {{{{ max-height: 450px; overflow-y: auto; }}}}
+        .table th, .table td {{{{ text-align: left; vertical-align: middle; white-space: nowrap; padding: 0.4rem;}}}}
+        .table td:not(:first-child), .table th:not(:first-child) {{{{ text-align: right; }}}}
+
+        @media (max-width: 768px) {{{{
+            .col-lg-4, .col-lg-6 {{{{
+                margin-bottom: 20px;
+            }}}}
+        }}}}
+    </style>
 </head>
 <body>
-
 <div class="container-fluid">
-    <div class="header">
+    <div class="text-center mt-4">
         <h1>Relatório de Performance Orçamentária</h1>
-        <h2>{unidade_alvo}</h2>
+        <h2 class="text-muted">{unidade_alvo}</h2>
     </div>
+    <hr>
     
     <div class="card">
         <div class="card-header">Visão Geral da Execução</div>
         <div class="card-body">
             <div class="row">
-                <div class="col-lg-4 col-md-12 kpi-card">
-                    <div class="kpi-label">Execução Total</div>
-                    <div class="kpi-value">{perc_total:.1f}%</div>
-                    <div class="kpi-comparison">{kpi_total_executado_str} de {kpi_total_planejado_str}</div>
+                <div class="col-lg-4">{html_gauge_total}
+                    <div class="kpi-values-box"><div class="text-center"><div class="kpi-financial-value blue-text">{kpi_total_planejado_str}</div><div class="kpi-financial-label">Planejado</div></div><div class="text-center"><div class="kpi-financial-value green-text">{kpi_total_executado_str}</div><div class="kpi-financial-label">Executado</div></div></div>
+                    <div class="kpi-box"><div class="row"><div class="col-6"><div class="kpi-value">{kpi_total_projetos}</div><div class="kpi-label">Projetos</div></div><div class="col-6"><div class="kpi-value">{kpi_total_acoes}</div><div class="kpi-label">Ações</div></div></div></div>
                 </div>
-                <div class="col-lg-4 col-md-6 kpi-card">
-                    <div class="kpi-label">Projetos Exclusivos</div>
-                    <div class="kpi-value">{perc_exclusivos:.1f}%</div>
-                    <div class="kpi-comparison">{kpi_exclusivos_executado_str} de {kpi_exclusivos_planejado_str}</div>
+                <div class="col-lg-4">{html_gauge_exclusivos}
+                     <div class="kpi-values-box"><div class="text-center"><div class="kpi-financial-value blue-text">{kpi_exclusivos_planejado_str}</div><div class="kpi-financial-label">Planejado</div></div><div class="text-center"><div class="kpi-financial-value green-text">{kpi_exclusivos_executado_str}</div><div class="kpi-financial-label">Executado</div></div></div>
+                    <div class="kpi-box"><div class="row"><div class="col-6"><div class="kpi-value">{kpi_exclusivos_projetos}</div><div class="kpi-label">Projetos</div></div><div class="col-6"><div class="kpi_exclusivos_acoes}</div><div class="kpi-label">Ações</div></div></div></div>
                 </div>
-                <div class="col-lg-4 col-md-6 kpi-card">
-                    <div class="kpi-label">Projetos Compartilhados</div>
-                    <div class="kpi-value">{perc_compartilhados:.1f}%</div>
-                    <div class="kpi-comparison">{kpi_compartilhados_executado_str} de {kpi_compartilhados_planejado_str}</div>
+                <div class="col-lg-4">{html_gauge_compartilhados}
+                    <div class="kpi-values-box"><div class="text-center"><div class="kpi-financial-value blue-text">{kpi_compartilhados_planejado_str}</div><div class="kpi-financial-label">Planejado</div></div><div class="text-center"><div class="kpi-financial-value green-text">{kpi_compartilhados_executado_str}</div><div class="kpi-financial-label">Executado</div></div></div>
+                    <div class="kpi-box"><div class="row"><div class="col-6"><div class="kpi-value">{kpi_compartilhados_projetos}</div><div class="kpi-label">Projetos</div></div><div class="col-6"><div class="kpi_compartilhados_acoes}</div><div class="kpi-label">Ações</div></div></div></div>
                 </div>
             </div>
         </div>
@@ -50,7 +70,7 @@
     </div>
 
     <div class="card">
-        <div class="card-header">Execução Percentual Acumulada por Trimestre</div>
+        <div class="card-header">Execução Percentual Trimestral</div>
         <div class="card-body">
             <div class="row">
                 <div class="col-lg-6">{html_perc_exclusivos}</div>
@@ -79,6 +99,5 @@
         </div>
     </div>
 </div>
-
 </body>
 </html>

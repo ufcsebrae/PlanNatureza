@@ -3,21 +3,19 @@
 gerar_relatorio.py
 
 Script dedicado à GERAÇÃO de relatórios de performance orçamentária em HTML.
-Ele pode ser executado de forma interativa ou via linha de comando para
-gerar relatórios para uma ou todas as unidades disponíveis na base de dados.
 """
 import argparse
 import logging
 import sys
 import os
-from typing import Any, List
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
 
-# --- Inicialização Crítica (Logger e Drivers) ---
+# --- Inicialização Crítica ---
 try:
     from logger_config import configurar_logger
     configurar_logger("geracao_relatorios.log")
@@ -30,7 +28,7 @@ except (ImportError, FileNotFoundError, Exception) as e:
 
 logger = logging.getLogger(__name__)
 
-# --- Importações do Projeto (pós-inicialização) ---
+# --- Importações do Projeto ---
 try:
     from config import CONFIG
     from database import get_conexao
@@ -53,18 +51,16 @@ def formatar_valor_tabela(num):
     if abs(num) >= 1_000: return f"{num/1_000:,.1f}k"
     return f"{num:,.0f}"
 
+# Retorna ao template padrão que funciona bem
 pio.templates.default = "plotly_white"
 pd.options.display.float_format = '{:,.2f}'.format
 
 def obter_unidades_disponiveis(engine_db: Any) -> List[str]:
-    """Consulta a função do banco para obter uma lista de unidades com dados."""
     logger.info("Consultando unidades de negócio disponíveis no banco de dados...")
     PPA_FILTRO = os.getenv("PPA_FILTRO", 'PPA 2025 - 2025/DEZ')
     ANO_FILTRO = int(os.getenv("ANO_FILTRO", 2025))
-
     query_unidades = "SELECT DISTINCT UNIDADE FROM dbo.vw_Analise_Planejado_vs_Executado_v2(?, ?, ?)"
     params = (f'{ANO_FILTRO}-01-01', f'{ANO_FILTRO}-12-31', PPA_FILTRO)
-
     try:
         df_unidades = pd.read_sql(query_unidades, engine_db, params=params)
         if df_unidades.empty:
@@ -78,9 +74,7 @@ def obter_unidades_disponiveis(engine_db: Any) -> List[str]:
         return []
 
 def selecionar_unidades_interativamente(unidades_disponiveis: List[str]) -> List[str]:
-    """Apresenta uma lista de unidades para o usuário e retorna as selecionadas."""
-    if not unidades_disponiveis:
-        return []
+    if not unidades_disponiveis: return []
     print("\n--- Unidades Disponíveis para Geração de Relatório ---")
     for i, unidade in enumerate(unidades_disponiveis, 1):
         print(f"  {i:2d}) {unidade}")
@@ -181,56 +175,36 @@ def gerar_relatorio_para_unidade(unidade_alvo: str, df_base: pd.DataFrame) -> No
     kpi_compartilhados_executado_str = formatar_numero_kpi(executado_compartilhados)
     logger.info(f"Cálculos de KPIs concluídos para {unidade_alvo}.")
 
-    # Geração dos Gráficos Plotly
     logger.info(f"Gerando gráficos para {unidade_alvo}...")
-
-    # NOVO TEMPLATE PLOTLY PARA MODO ESCURO E ESTILO
-    # Adiciona um template customizado que pode ser combinado com "plotly_white" ou "plotly_dark"
-    pio.templates["custom_template"] = go.layout.Template(
-        layout=go.Layout(
-            font={'family': 'Segoe UI', 'color': '#bdc3c7'}, # Cor do texto para modo escuro
-            paper_bgcolor='#2c2c2c', # Fundo do papel (fora do plot)
-            plot_bgcolor='#2c2c2c', # Fundo da área do plot
-            xaxis={'gridcolor': '#4a4a4a', 'linecolor': '#4a4a4a', 'zerolinecolor': '#4a4a4a'}, # Linhas de grid/eixo
-            yaxis={'gridcolor': '#4a4a4a', 'linecolor': '#4a4a4a', 'zerolinecolor': '#4a4a4a'}, # Linhas de grid/eixo
-            title={'x': 0.5}, # Centraliza o título
-            legend={'orientation': "h", 'yanchor': "bottom", 'y': 1.02, 'xanchor': "right", 'x': 1} # Posição da legenda
-        )
-    )
-    # Define o template padrão para usar o branco com o customizado (para responsividade ao modo escuro)
-    pio.templates.default = "plotly_white+custom_template"
-
-
+    
     perc_contrib_exclusivos = (executado_exclusivos / total_executado_unidade * 100) if total_executado_unidade > 0 else 0
     perc_contrib_compartilhados = (executado_compartilhados / total_executado_unidade * 100) if total_executado_unidade > 0 else 0
     texto_contribuicao = f"% do Tot.: <br> Exclusivos: {perc_contrib_exclusivos:.2f}% | Compartilhados: {perc_contrib_compartilhados:.2f}%"
 
-    fig_gauge_total = go.Figure(go.Indicator(mode="gauge+number", value=perc_total, title={'text': "Execução Total"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#3498db"}}))
-    fig_gauge_total.add_annotation(x=0.5, y=-0.18, text=texto_contribuicao, showarrow=False, font=dict(size=12, color="var(--text-color)"))
-    fig_gauge_total.update_layout(height=250, margin=dict(t=50, b=30), template=pio.templates['custom_template'])
-
-    fig_gauge_exclusivos = go.Figure(go.Indicator(mode="gauge+number", value=perc_exclusivos, title={'text': "Projetos Exclusivos"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#2ecc71"}}))
-    fig_gauge_exclusivos.update_layout(height=250, margin=dict(t=50, b=20), template=pio.templates['custom_template'])
-
-    fig_gauge_compartilhados = go.Figure(go.Indicator(mode="gauge+number", value=perc_compartilhados, title={'text': "Projetos Compartilhados"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#f1c40f"}}))
-    fig_gauge_compartilhados.update_layout(height=250, margin=dict(t=50, b=20), template=pio.templates['custom_template'])
+    fig_gauge_total = go.Figure(go.Indicator(mode="gauge+number", value=perc_total, title={'text': "Execução Total"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "#004085"}}))
+    fig_gauge_total.add_annotation(x=0.5, y=-0.18, text=texto_contribuicao, showarrow=False, font=dict(size=12, color="#6c757d"))
+    fig_gauge_total.update_layout(height=250, margin=dict(t=50, b=30))
+    fig_gauge_exclusivos = go.Figure(go.Indicator(mode="gauge+number", value=perc_exclusivos, title={'text': "Projetos Exclusivos"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "green"}}))
+    fig_gauge_exclusivos.update_layout(height=250, margin=dict(t=50, b=20))
+    fig_gauge_compartilhados = go.Figure(go.Indicator(mode="gauge+number", value=perc_compartilhados, title={'text': "Projetos Compartilhados"}, number={'valueformat': '.1f', 'suffix': '%'}, gauge={'axis': {'range': [None, 100]}, 'bar': {'color': "goldenrod"}}))
+    fig_gauge_compartilhados.update_layout(height=250, margin=dict(t=50, b=20))
     
     HOVER_TEMPLATE_VALOR = '<b>%{data.name}</b><br>Valor: R$ %{y:,.2f}<extra></extra>'
     execucao_mensal_exclusivos = df_exclusivos_unidade.groupby('MES', observed=False).agg(Planejado=('Valor_Planejado', 'sum'), Executado=('Valor_Executado', 'sum')).reset_index()
     fig_line_valor_exclusivos = go.Figure()
-    fig_line_valor_exclusivos.add_trace(go.Scatter(x=execucao_mensal_exclusivos['MES'], y=execucao_mensal_exclusivos['Planejado'], mode='lines', name='Planejado', line=dict(color='#3498db', dash='dot'), hovertemplate=HOVER_TEMPLATE_VALOR))
-    fig_line_valor_exclusivos.add_trace(go.Scatter(x=execucao_mensal_exclusivos['MES'], y=execucao_mensal_exclusivos['Executado'], mode='lines', name='Executado', line=dict(color='#2ecc71'), hovertemplate=HOVER_TEMPLATE_VALOR))
-    fig_line_valor_exclusivos.update_layout(title='Valores Mensais - Exclusivos', xaxis_title='Mês', yaxis_title='Valor (R$)', hovermode='x unified', separators=',.', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), template=pio.templates['custom_template'])
+    fig_line_valor_exclusivos.add_trace(go.Scatter(x=execucao_mensal_exclusivos['MES'], y=execucao_mensal_exclusivos['Planejado'], mode='lines', name='Planejado', line=dict(color='lightblue', dash='dot'), hovertemplate=HOVER_TEMPLATE_VALOR))
+    fig_line_valor_exclusivos.add_trace(go.Scatter(x=execucao_mensal_exclusivos['MES'], y=execucao_mensal_exclusivos['Executado'], mode='lines', name='Executado', line=dict(color='green'), hovertemplate=HOVER_TEMPLATE_VALOR))
+    fig_line_valor_exclusivos.update_layout(title='Valores Mensais - Exclusivos', xaxis_title='Mês', yaxis_title='Valor (R$)', hovermode='x unified', separators=',.')
 
     execucao_mensal_compartilhados = df_compartilhados_unidade.groupby('MES', observed=False).agg(Planejado=('Valor_Planejado', 'sum'), Executado=('Valor_Executado', 'sum')).reset_index()
     fig_line_valor_compartilhados = go.Figure()
-    fig_line_valor_compartilhados.add_trace(go.Scatter(x=execucao_mensal_compartilhados['MES'], y=execucao_mensal_compartilhados['Planejado'], mode='lines', name='Planejado', line=dict(color='#e67e22', dash='dot'), hovertemplate=HOVER_TEMPLATE_VALOR))
-    fig_line_valor_compartilhados.add_trace(go.Scatter(x=execucao_mensal_compartilhados['MES'], y=execucao_mensal_compartilhados['Executado'], mode='lines', name='Executado', line=dict(color='#f1c40f'), hovertemplate=HOVER_TEMPLATE_VALOR))
-    fig_line_valor_compartilhados.update_layout(title='Valores Mensais - Compartilhados', xaxis_title='Mês', yaxis_title='Valor (R$)', hovermode='x unified', separators=',.', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), template=pio.templates['custom_template'])
+    fig_line_valor_compartilhados.add_trace(go.Scatter(x=execucao_mensal_compartilhados['MES'], y=execucao_mensal_compartilhados['Planejado'], mode='lines', name='Planejado', line=dict(color='moccasin', dash='dot'), hovertemplate=HOVER_TEMPLATE_VALOR))
+    fig_line_valor_compartilhados.add_trace(go.Scatter(x=execucao_mensal_compartilhados['MES'], y=execucao_mensal_compartilhados['Executado'], mode='lines', name='Executado', line=dict(color='goldenrod'), hovertemplate=HOVER_TEMPLATE_VALOR))
+    fig_line_valor_compartilhados.update_layout(title='Valores Mensais - Compartilhados', xaxis_title='Mês', yaxis_title='Valor (R$)', hovermode='x unified', separators=',.')
 
     def criar_grafico_execucao_trimestral(df, tipo_projeto, total_anual_planejado):
-        cor_map = {'Exclusivos': '#2ecc71', 'Compartilhados': '#f1c40f'}
-        cor_map_light = {'Exclusivos': 'rgba(46, 204, 113, 0.4)', 'Compartilhados': 'rgba(241, 196, 15, 0.4)'}
+        cor_map = {'Exclusivos': 'green', 'Compartilhados': 'goldenrod'}
+        cor_map_light = {'Exclusivos': 'lightgreen', 'Compartilhados': 'moccasin'}
         if df.empty: return go.Figure().update_layout(title=f'Execução Percentual - {tipo_projeto} (Sem Dados)')
         dados_trimestrais = df.groupby('nm_trimestre', observed=False).agg(Planejado_T=('Valor_Planejado', 'sum'), Executado_T=('Valor_Executado', 'sum')).reset_index()
         dados_trimestrais['%_Exec_Trimestral'] = np.where(dados_trimestrais['Planejado_T'] > 0, (dados_trimestrais['Executado_T'] / dados_trimestrais['Planejado_T']) * 100, 0)
@@ -239,63 +213,57 @@ def gerar_relatorio_para_unidade(unidade_alvo: str, df_base: pd.DataFrame) -> No
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=dados_trimestrais['nm_trimestre'], y=dados_trimestrais['%_Exec_Trimestral'], mode='lines+markers', name='Execução no Trimestre (%)', line=dict(color=cor_map_light[tipo_projeto], dash='dot'), hovertemplate='<b>%{x}</b><br>Exec no Trimestre: %{y:.1f}%<extra></extra>'))
         fig.add_trace(go.Scatter(x=dados_trimestrais['nm_trimestre'], y=dados_trimestrais['%_Acum_Total'], mode='lines+markers', name='Acumulado sobre Total Anual (%)', line=dict(color=cor_map[tipo_projeto]), hovertemplate='<b>%{x}</b><br>Acumulado sobre Total: %{y:.1f}%<extra></extra>'))
-        fig.add_hline(y=100, line_width=1, line_dash="dash", line_color="#7f8c8d", annotation_text="Meta 100%", annotation_position="bottom right")
-        fig.update_layout(title=f'Execução Percentual - {tipo_projeto}', xaxis_title='Trimestre', yaxis_title='Percentual (%)', hovermode='x unified', yaxis=dict(ticksuffix='%'), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), template=pio.templates['custom_template'])
+        fig.add_hline(y=100, line_width=2, line_dash="dash", line_color="gray", annotation_text="Meta 100%", annotation_position="bottom right")
+        fig.update_layout(title=f'Execução Percentual - {tipo_projeto}', xaxis_title='Trimestre', yaxis_title='Percentual (%)', hovermode='x unified', yaxis=dict(ticksuffix='%'), legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.01))
         return fig
 
     fig_perc_exclusivos = criar_grafico_execucao_trimestral(df_exclusivos_unidade, 'Exclusivos', planejado_exclusivos)
     fig_perc_compartilhados = criar_grafico_execucao_trimestral(df_compartilhados_unidade, 'Compartilhados', planejado_compartilhados)
     logger.info(f"Todos os gráficos foram gerados para {unidade_alvo}.\n")
 
-    # Geração das Tabelas Plotly
     logger.info(f"Gerando tabelas analíticas para {unidade_alvo}...")
-    
     tb_projetos_exc = criar_tabela_analitica_trimestral(df_exclusivos_unidade, 'PROJETO', 'Projeto')
     tb_projetos_comp = criar_tabela_analitica_trimestral(df_compartilhados_unidade, 'PROJETO', 'Projeto')
     tb_natureza_exc = criar_tabela_analitica_trimestral(df_exclusivos_unidade, 'Descricao_Natureza_Orcamentaria', 'Natureza Orçamentária')
     tb_natureza_comp = criar_tabela_analitica_trimestral(df_compartilhados_unidade, 'Descricao_Natureza_Orcamentaria', 'Natureza Orçamentária')
     logger.info(f"Tabelas analíticas criadas com sucesso para {unidade_alvo}.\n")
 
-    # Montagem e Salvamento do HTML usando o template externo
     logger.info(f"Montando e salvando o arquivo HTML para {unidade_alvo}...")
     try:
         template_path = CONFIG.paths.templates_dir / "template_relatorio.html"
-        # Cria a pasta templates se não existir
-        template_path.parent.mkdir(parents=True, exist_ok=True)
         template_string = template_path.read_text(encoding='utf-8')
     except FileNotFoundError:
-        logger.error(f"Arquivo de template HTML '{template_path.name}' não encontrado em '{template_path}'.")
+        logger.error(f"Arquivo de template não encontrado em '{template_path}'.")
         return
     except Exception as e:
-        logger.exception(f"Erro ao ler o arquivo de template HTML '{template_path.name}': {e}")
+        logger.exception(f"Erro ao ler o arquivo de template: {e}")
         return
 
-    # Contexto para preencher o template
     contexto = {
         "unidade_alvo": unidade_alvo,
-        "perc_total": perc_total, # Usar o percentual direto para os KPIs
+        "html_gauge_total": pio.to_html(fig_gauge_total, full_html=False, include_plotlyjs='cdn'),
+        "html_gauge_exclusivos": pio.to_html(fig_gauge_exclusivos, full_html=False, include_plotlyjs=False),
+        "html_gauge_compartilhados": pio.to_html(fig_gauge_compartilhados, full_html=False, include_plotlyjs=False),
         "kpi_total_planejado_str": kpi_total_planejado_str,
         "kpi_total_executado_str": kpi_total_executado_str,
-        "perc_exclusivos": perc_exclusivos,
+        "kpi_total_projetos": kpi_total_projetos,
+        "kpi_total_acoes": kpi_total_acoes,
         "kpi_exclusivos_planejado_str": kpi_exclusivos_planejado_str,
         "kpi_exclusivos_executado_str": kpi_exclusivos_executado_str,
-        "perc_compartilhados": perc_compartilhados,
+        "kpi_exclusivos_projetos": kpi_exclusivos_projetos,
+        "kpi_exclusivos_acoes": kpi_exclusivos_acoes,
         "kpi_compartilhados_planejado_str": kpi_compartilhados_planejado_str,
         "kpi_compartilhados_executado_str": kpi_compartilhados_executado_str,
-        "kpi_total_projetos": kpi_total_projetos, # Adicionado
-        "kpi_total_acoes": kpi_total_acoes, # Adicionado
-        "kpi_exclusivos_projetos": kpi_exclusivos_projetos, # Adicionado
-        "kpi_exclusivos_acoes": kpi_exclusivos_acoes, # Adicionado
-        "kpi_compartilhados_projetos": kpi_compartilhados_projetos, # Adicionado
-        "kpi_compartilhados_acoes": kpi_compartilhados_acoes, # Adicionado
+        "kpi_compartilhados_projetos": kpi_compartilhados_projetos,
+        "kpi_compartilhados_acoes": kpi_compartilhados_acoes,
         "html_line_valor_exclusivos": pio.to_html(fig_line_valor_exclusivos, full_html=False, include_plotlyjs=False),
         "html_line_valor_compartilhados": pio.to_html(fig_line_valor_compartilhados, full_html=False, include_plotlyjs=False),
         "html_perc_exclusivos": fig_perc_exclusivos.to_html(full_html=False, include_plotlyjs=False),
         "html_perc_compartilhados": fig_perc_compartilhados.to_html(full_html=False, include_plotlyjs=False),
-        "html_table_projetos_exc": criar_tabela_analitica_trimestral(df_exclusivos_unidade, 'PROJETO', 'Projeto').to_html(classes='table', index=False, border=0, escape=False),
-        "html_table_projetos_comp": criar_tabela_analitica_trimestral(df_compartilhados_unidade, 'PROJETO', 'Projeto').to_html(classes='table', index=False, border=0, escape=False),
-        "html_table_natureza_exc": criar_tabela_analitica_trimestral(df_exclusivos_unidade, 'Descricao_Natureza_Orcamentaria', 'Natureza Orçamentária').to_html(classes='table', index=False, border=0, escape=False),
-        "html_table_natureza_comp": criar_tabela_analitica_trimestral(df_compartilhados_unidade, 'Descricao_Natureza_Orcamentaria', 'Natureza Orçamentária').to_html(classes='table', index=False, border=0, escape=False),
+        "html_table_projetos_exc": tb_projetos_exc.to_html(classes='table table-striped table-hover table-sm', index=False, border=0, escape=False),
+        "html_table_projetos_comp": tb_projetos_comp.to_html(classes='table table-striped table-hover table-sm', index=False, border=0, escape=False),
+        "html_table_natureza_exc": tb_natureza_exc.to_html(classes='table table-striped table-hover table-sm', index=False, border=0, escape=False),
+        "html_table_natureza_comp": tb_natureza_comp.to_html(classes='table table-striped table-hover table-sm', index=False, border=0, escape=False),
     }
 
     html_final = template_string.format(**contexto)
@@ -312,185 +280,9 @@ def main() -> None:
     parser.add_argument("--todas-unidades", action="store_true", help="Gera relatórios para todas as unidades disponíveis na base de dados.")
     args = parser.parse_args()
 
-    # Garante que os diretórios de saída existam
     CONFIG.paths.relatorios_dir.mkdir(parents=True, exist_ok=True)
     CONFIG.paths.logs_dir.mkdir(parents=True, exist_ok=True)
-    CONFIG.paths.templates_dir.mkdir(parents=True, exist_ok=True) # Garante que a pasta templates exista
-    CONFIG.paths.static_dir.mkdir(parents=True, exist_ok=True) # Garante que a pasta static exista
-
-    # Cria o arquivo style.css dentro de docs/static se ele não existir
-    css_content = """
-/* docs/static/style.css */
-
-/* --- Variáveis de Cor para Fácil Customização --- */
-:root {
-    --bg-color: #f8f9fa;
-    --card-bg: #ffffff;
-    --text-color: #495057;
-    --header-bg: #2c3e50;
-    --header-text: #ffffff;
-    --primary-color: #3498db;
-    --accent-color: #2980b9;
-    --kpi-value-color: #2c3e50;
-    --green-text: #27ae60;
-    --red-text: #c0392b;
-    --border-color: #dee2e6;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-}
-
-/* --- Modo Escuro --- */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-color: #1a1a1a;
-        --card-bg: #2c2c2c;
-        --text-color: #bdc3c7;
-        --header-bg: #1f2933;
-        --header-text: #ecf0f1;
-        --primary-color: #3498db;
-        --accent-color: #5dade2;
-        --kpi-value-color: #ecf0f1;
-        --green-text: #2ecc71;
-        --red-text: #e74c3c;
-        --border-color: #4a4a4a;
-        --shadow-color: rgba(0, 0, 0, 0.2);
-    }
-}
-
-/* --- Estrutura e Layout --- */
-body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 20px;
-}
-
-.container-fluid {
-    max-width: 1400px;
-    margin: auto;
-}
-
-/* --- Tipografia e Cabeçalhos --- */
-.header {
-    background-color: var(--header-bg);
-    color: var(--header-text);
-    padding: 20px 30px;
-    border-radius: 8px;
-    margin-bottom: 30px;
-}
-
-.header h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 600;
-}
-
-.header h2 {
-    margin: 5px 0 0 0;
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: var(--accent-color);
-}
-
-.card {
-    background-color: var(--card-bg);
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px var(--shadow-color);
-    margin-bottom: 30px;
-}
-
-.card-header {
-    background-color: transparent;
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem 1.5rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--kpi-value-color);
-}
-
-/* --- KPIs da Visão Geral --- */
-.kpi-card {
-    padding: 1.5rem;
-    text-align: center;
-}
-
-.kpi-label {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-}
-
-.kpi-value {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--kpi-value-color);
-    line-height: 1.2;
-}
-
-.kpi-comparison.positive {
-    color: var(--green-text);
-}
-
-.kpi-comparison.negative {
-    color: var(--red-text);
-}
-
-.kpi-comparison {
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-/* --- Gráficos --- */
-.plotly-graph-div {
-    min-height: 400px;
-}
-
-/* --- Tabelas --- */
-.table-responsive {
-    max-height: 500px;
-    overflow-y: auto;
-    border-radius: 8px;
-}
-.table {
-    margin-bottom: 0;
-    color: var(--text-color);
-}
-.table thead th {
-    background-color: var(--bg-color);
-    border-top: none;
-    border-bottom: 2px solid var(--border-color);
-    font-weight: 600;
-}
-.table td, .table th {
-    border-top: 1px solid var(--border-color);
-    padding: 0.75rem;
-    vertical-align: middle;
-}
-.table tbody tr:hover {
-    background-color: rgba(0,0,0,0.05);
-}
-.table td:not(:first-child), .table th:not(:first-child) {
-    text-align: right;
-}
-
-/* --- Responsividade --- */
-@media (max-width: 768px) {
-    body { padding: 10px; }
-    .kpi-card { border-bottom: 1px solid var(--border-color); }
-    .kpi-card:last-child { border-bottom: none; }
-}
-"""
-    css_file_path = CONFIG.paths.static_dir / "style.css"
-    if not css_file_path.exists():
-        with open(css_file_path, "w", encoding="utf-8") as f:
-            f.write(css_content)
-        logger.info(f"Arquivo CSS '{css_file_path.name}' criado em '{CONFIG.paths.static_dir}'.")
-    else:
-        logger.info(f"Arquivo CSS '{css_file_path.name}' já existe. Não foi recriado.")
-
-
+        
     logger.info("Estabelecendo conexão com o banco de dados...")
     try:
         engine_db = get_conexao(CONFIG.conexoes["FINANCA_SQL"])
@@ -524,6 +316,7 @@ body {
         logger.info("Carregando dados base do banco de dados (uma única vez)...")
         df_base_total = pd.read_sql(sql_query, engine_db, params=params)
         
+        # Como os nomes das colunas da função são simples, não precisamos mais renomear.
         df_base_total['nm_unidade_padronizada'] = df_base_total['UNIDADE'].str.upper().str.replace('SP - ', '', regex=False).str.strip()
         
         unidades_por_projeto = df_base_total.groupby('PROJETO')['nm_unidade_padronizada'].nunique().reset_index()
