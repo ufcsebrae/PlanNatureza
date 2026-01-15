@@ -5,44 +5,45 @@ import logging
 import sys
 from typing import Final
 
-# Nível de log configurável em um só lugar.
-# Para depuração, mude para logging.DEBUG.
+# Importa a configuração para usar o caminho da pasta de logs
+from config import CONFIG
+
 LOG_LEVEL: Final[int] = logging.INFO
 
 
-def configurar_logger() -> logging.Logger:
+def configurar_logger(nome_arquivo_log: str) -> logging.Logger:
     """
-    Configura o logger raiz para formatar e exibir mensagens no console.
+    Configura o logger raiz para exibir mensagens no console e salvá-las em um arquivo.
 
-    Níveis de Log:
-    - DEBUG: Informações detalhadas, para depuração.
-    - INFO: Confirmação de que as coisas estão funcionando como esperado.
-    - WARNING: Indicação de algo inesperado ou um problema iminente.
-    - ERROR: O software não conseguiu executar alguma função.
-    - CRITICAL: Erro grave que pode impedir a continuação do programa.
-
-    Returns:
-        A instância do logger raiz configurado.
+    Args:
+        nome_arquivo_log: O nome do arquivo onde os logs serão salvos (ex: 'pipeline.log').
     """
-    # Define um formato de mensagem claro e informativo.
     formato = logging.Formatter(
         fmt="%(asctime)s - %(levelname)-8s - %(name)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Cria um manipulador (handler) que envia as mensagens para a saída padrão.
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formato)
-
-    # Obtém o logger raiz.
     logger = logging.getLogger()
     logger.setLevel(LOG_LEVEL)
 
-    # Limpa handlers existentes para evitar duplicação de logs em reexecuções.
+    # Limpa handlers existentes para evitar duplicação
     if logger.hasHandlers():
         logger.handlers.clear()
 
-    logger.addHandler(handler)
+    # --- 1. Console Handler (para ver no terminal) ---
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formato)
+    logger.addHandler(console_handler)
+
+    # --- 2. File Handler (para salvar em arquivo) ---
+    log_dir = CONFIG.paths.logs_dir
+    log_dir.mkdir(exist_ok=True)  # Cria a pasta 'logs' se ela não existir
+
+    caminho_log_arquivo = log_dir / nome_arquivo_log
+    file_handler = logging.FileHandler(caminho_log_arquivo, mode='a', encoding='utf-8')
+    file_handler.setFormatter(formato)
+    logger.addHandler(file_handler)
+
+    logger.info(f"Logger configurado. Saída também será salva em: {caminho_log_arquivo}")
 
     return logger
-

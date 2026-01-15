@@ -8,3 +8,6 @@ numpy
 thefuzz
 python-Levenshtein
 plotly
+selenium
+webdriver-manager
+pywin32

@@ -2,24 +2,30 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Final
+from typing import Dict, Final
 
 from dotenv import load_dotenv
 
-# Carrega as variáveis de ambiente do arquivo .env no diretório do projeto.
 load_dotenv()
 
 
 @dataclass(frozen=True)
 class PathsConfig:
-    """Centraliza todos os caminhos de arquivos usados no projeto."""
+    """Centraliza todos os caminhos de arquivos e diretórios usados no projeto."""
 
-    base_dir: Path = Path(__file__).parent
+    base_dir: Path = Path(__file__).resolve().parent
+    
+    # Diretórios de Saída
+    relatorios_dir: Path = base_dir / "relatorios"
+    logs_dir: Path = base_dir / "logs"
+
+    # Arquivos de Entrada e Dados
     query_nacional: Path = base_dir / "queries" / "nacional.sql"
     query_cc: Path = base_dir / "queries" / "cc.sql"
     cache_db: Path = base_dir / "cache_dados.db"
     mapa_correcoes: Path = base_dir / "mapa_correcoes.json"
     drivers: Path = base_dir / "drivers"
+    gerentes_csv: Path = base_dir / "gerentes.csv"
 
 
 @dataclass(frozen=True)
@@ -31,7 +37,6 @@ class DbConfig:
     servidor: str | None = None
     banco: str | None = None
     caminho: Path | None = None
-    # Adicionado campos específicos para OLAP
     provider: str | None = None
     data_source: str | None = None
     catalog: str | None = None
@@ -49,27 +54,26 @@ class AppConfig:
 def get_config() -> AppConfig:
     """
     Constrói e retorna o objeto de configuração principal da aplicação.
-    Valida a presença de variáveis de ambiente essenciais.
     """
     paths = PathsConfig()
+
+    driver_sql = os.getenv("DB_DRIVER", "ODBC Driver 18 for SQL Server")
 
     conexoes = {
         "HubDados": DbConfig(
             tipo="sql",
             servidor=os.getenv("DB_SERVER_HUB"),
             banco=os.getenv("DB_DATABASE_HUB"),
-            # CORREÇÃO: Alterado para a versão 18 do driver ODBC.
-            driver="ODBC Driver 18 for SQL Server",
+            driver=driver_sql,
         ),
         "FINANCA_SQL": DbConfig(
             tipo="sql",
             servidor=os.getenv("DB_SERVER_FINANCA"),
             banco=os.getenv("DB_DATABASE_FINANCA"),
-            # CORREÇÃO: Alterado para a versão 18 do driver ODBC.
-            driver="ODBC Driver 18 for SQL Server",
+            driver=driver_sql,
         ),
         "CacheDB": DbConfig(tipo="sqlite", caminho=paths.cache_db),
-        "OLAP": DbConfig(  # Inclui a configuração OLAP
+        "OLAP": DbConfig(
             tipo="olap",
             provider=os.getenv("OLAP_PROVIDER"),
             data_source=os.getenv("OLAP_SOURCE"),
@@ -77,26 +81,17 @@ def get_config() -> AppConfig:
         ),
     }
 
-    # Validação crítica para garantir que as variáveis de ambiente foram carregadas
+    # Validações críticas...
     if not conexoes["HubDados"].servidor or not conexoes["FINANCA_SQL"].servidor:
-        raise ValueError(
-            "Erro crítico: Variáveis de ambiente essenciais para conexões SQL (DB_SERVER_HUB, DB_SERVER_FINANCA) "
-            "não foram definidas no arquivo .env."
-        )
+        raise ValueError("Erro: Variáveis de ambiente para conexões SQL não definidas.")
 
-    # Validação para OLAP (se definido)
-    if conexoes["OLAP"].tipo == "olap" and (
-        not conexoes["OLAP"].provider
-        or not conexoes["OLAP"].data_source
-        or not conexoes["OLAP"].catalog
+    if conexoes["OLAP"].tipo == "olap" and not all(
+        [conexoes["OLAP"].provider, conexoes["OLAP"].data_source, conexoes["OLAP"].catalog]
     ):
-        raise ValueError(
-            "Erro crítico: Variáveis de ambiente para conexão OLAP (OLAP_PROVIDER, OLAP_SOURCE, OLAP_CATALOG) "
-            "não foram completamente definidas no arquivo .env."
-        )
+        raise ValueError("Erro: Variáveis de ambiente para conexão OLAP não definidas.")
 
     return AppConfig(paths=paths, conexoes=conexoes)
 
 
-# Instância única de configuração para ser importada em outros módulos.
 CONFIG: Final[AppConfig] = get_config()
+
