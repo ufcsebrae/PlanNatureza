@@ -4,13 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Final
 
-# A biblioteca python-dotenv é ótima para desenvolvimento, mas em produção
-# as variáveis de ambiente são geralmente gerenciadas pelo sistema operacional
-# ou orquestrador de contêineres. O uso direto de os.getenv garante
-# que o código funcione em ambos os cenários.
 from dotenv import load_dotenv
 
-# Carrega as variáveis de ambiente do arquivo .env no diretório do projeto.
 load_dotenv()
 
 
@@ -20,12 +15,15 @@ class PathsConfig:
 
     base_dir: Path = Path(__file__).resolve().parent
     
-    # --- Diretórios de Saída ---
-    # Renomeado de 'relatorios' para 'docs' para compatibilidade com GitHub Pages.
-    relatorios_dir: Path = base_dir / "docs"
+    # Diretórios de Saída
+    relatorios_dir: Path = base_dir / "docs" # Aponta para a pasta 'docs'
     logs_dir: Path = base_dir / "logs"
 
-    # --- Arquivos de Entrada e Dados ---
+    # Diretório de Templates e Estilos
+    templates_dir: Path = base_dir / "templates"
+    static_dir: Path = relatorios_dir / "static" # Pasta para CSS dentro de 'docs'
+
+    # Arquivos de Entrada e Dados
     query_nacional: Path = base_dir / "queries" / "nacional.sql"
     query_cc: Path = base_dir / "queries" / "cc.sql"
     cache_db: Path = base_dir / "cache_dados.db"
@@ -64,7 +62,6 @@ def get_config() -> AppConfig:
     """
     paths = PathsConfig()
 
-    # O driver agora é configurável via variável de ambiente, com um padrão seguro.
     driver_sql = os.getenv("DB_DRIVER", "ODBC Driver 18 for SQL Server")
 
     conexoes = {
@@ -89,7 +86,6 @@ def get_config() -> AppConfig:
         ),
     }
 
-    # Validação crítica para garantir que as variáveis de ambiente foram carregadas
     if not conexoes["HubDados"].servidor or not conexoes["FINANCA_SQL"].servidor:
         raise ValueError(
             "Erro crítico: Variáveis de ambiente para conexões SQL (DB_SERVER_HUB, DB_SERVER_FINANCA) "
@@ -107,5 +103,5 @@ def get_config() -> AppConfig:
     return AppConfig(paths=paths, conexoes=conexoes)
 
 
-# Instância única de configuração para ser importada em outros módulos.
 CONFIG: Final[AppConfig] = get_config()
+

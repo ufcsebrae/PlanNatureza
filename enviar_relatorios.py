@@ -2,14 +2,9 @@
 import argparse
 import logging
 import os
-import smtplib
-import ssl
 import sys
 import time
 import warnings
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -72,19 +67,17 @@ def enviar_via_outlook(destinatario: str, assunto: str, corpo_html: str, anexo_p
         
         if anexo_path and anexo_path.exists():
             attachment = mail.Attachments.Add(str(anexo_path.resolve()))
-            # Content ID (cid) para incorporar a imagem no corpo do HTML
             attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "screenshot_cid")
             corpo_html = corpo_html.replace('src="cid:screenshot"', 'src="cid:screenshot_cid"')
         
         mail.HTMLBody = corpo_html
-        mail.Display() # Abre o e-mail para revisão. Mude para .Send() para enviar direto.
+        mail.Display()
         
         logger.info(f"E-mail para {destinatario} criado e exibido no Outlook para revisão.")
         return True
     except Exception as e:
         logger.exception(f"Falha ao criar e-mail no Outlook para {destinatario}.")
         return False
-
 
 def capturar_screenshot_relatorio(html_path: Path) -> Optional[Path]:
     logger.info(f"Capturando screenshot de '{html_path.name}'...")
@@ -112,18 +105,18 @@ def gerar_resumo_executivo(unidade: str, df_base: pd.DataFrame) -> str:
     logger.info(f"Gerando resumo executivo para a unidade: {unidade}")
     df_unidade = df_base[df_base['nm_unidade_padronizada'] == unidade]
     if df_unidade.empty: return "<li>Não foram encontrados dados suficientes para gerar um resumo.</li>"
-    total_planejado = df_unidade['vl_planejado'].sum()
-    total_executado = df_unidade['vl_executado'].sum()
+    total_planejado = df_unidade['Valor_Planejado'].sum()
+    total_executado = df_unidade['Valor_Executado'].sum()
     perc_execucao = (total_executado / total_planejado * 100) if total_planejado > 0 else 0
     resumo1 = f"A unidade atingiu <strong>{perc_execucao:.1f}%</strong> da sua meta orçamentária total (Executado: R$ {total_executado:,.2f} de R$ {total_planejado:,.2f})."
-    projeto_maior_execucao = df_unidade.groupby('nm_projeto')['vl_executado'].sum().idxmax()
-    valor_maior_execucao = df_unidade.groupby('nm_projeto')['vl_executado'].sum().max()
+    projeto_maior_execucao = df_unidade.groupby('PROJETO')['Valor_Executado'].sum().idxmax()
+    valor_maior_execucao = df_unidade.groupby('PROJETO')['Valor_Executado'].sum().max()
     resumo2 = f"O projeto de maior destaque em execução financeira é <strong>'{projeto_maior_execucao}'</strong>, com R$ {valor_maior_execucao:,.2f} já realizados."
-    df_com_orcamento = df_unidade[df_unidade['vl_planejado'] > 0].copy()
+    df_com_orcamento = df_unidade[df_unidade['Valor_Planejado'] > 0].copy()
     if not df_com_orcamento.empty:
-        df_com_orcamento['perc_exec'] = df_com_orcamento['vl_executado'] / df_com_orcamento['vl_planejado']
-        projeto_menor_execucao = df_com_orcamento.groupby('nm_projeto')['perc_exec'].mean().idxmin()
-        perc_menor_execucao = df_com_orcamento.groupby('nm_projeto')['perc_exec'].mean().min() * 100
+        df_com_orcamento['perc_exec'] = df_com_orcamento['Valor_Executado'] / df_com_orcamento['Valor_Planejado']
+        projeto_menor_execucao = df_com_orcamento.groupby('PROJETO')['perc_exec'].mean().idxmin()
+        perc_menor_execucao = df_com_orcamento.groupby('PROJETO')['perc_exec'].mean().min() * 100
         resumo3 = f"Ponto de atenção: o projeto <strong>'{projeto_menor_execucao}'</strong> apresenta a menor taxa de execução ({perc_menor_execucao:.1f}%), indicando uma oportunidade de análise."
     else:
         resumo3 = "Todos os projetos com orçamento tiveram alguma execução."
@@ -134,11 +127,14 @@ def main() -> None:
     args = parser.parse_args()
 
     relatorios_dir = CONFIG.paths.relatorios_dir
+    if not relatorios_dir.exists():
+        logger.error(f"A pasta de relatórios '{relatorios_dir}' não foi encontrada. Execute 'gerar_relatorio.py' primeiro.")
+        sys.exit(1)
+        
     relatorios_gerados = sorted(list(relatorios_dir.glob("*.html")))
 
     if not relatorios_gerados:
-        # **MELHORIA AQUI**
-        logger.warning(f"Nenhum relatório HTML encontrado na pasta '{relatorios_dir}'. Execute 'gerar_relatorio.py' primeiro.")
+        logger.warning(f"Nenhum relatório HTML encontrado na pasta '{relatorios_dir}'.")
         sys.exit(0)
 
     gerentes = carregar_gerentes_do_csv()
@@ -178,9 +174,13 @@ def main() -> None:
     logger.info("Carregando dados base para gerar resumos...")
     PPA_FILTRO = os.getenv("PPA_FILTRO", 'PPA 2025 - 2025/DEZ')
     ANO_FILTRO = int(os.getenv("ANO_FILTRO", 2025))
-    sql_query = f"SELECT * FROM dbo.vw_Analise_Planejado_vs_Executado_v2 WHERE nm_ppa = '{PPA_FILTRO}' AND nm_ano = {ANO_FILTRO}"
-    df_base_total = pd.read_sql(sql_query, engine_db)
-    df_base_total['nm_unidade_padronizada'] = df_base_total['nm_unidade'].str.upper().str.replace('SP - ', '', regex=False).str.strip()
+    
+    # --- CORREÇÃO DA QUERY PRINCIPAL ---
+    sql_query = "SELECT * FROM dbo.vw_Analise_Planejado_vs_Executado_v2(?, ?, ?)"
+    params = (f'{ANO_FILTRO}-01-01', f'{ANO_FILTRO}-12-31', PPA_FILTRO)
+    
+    df_base_total = pd.read_sql(sql_query, engine_db, params=params)
+    df_base_total['nm_unidade_padronizada'] = df_base_total['UNIDADE'].str.upper().str.replace('SP - ', '', regex=False).str.strip()
 
     for html_path in relatorios_para_enviar:
         unidade_nome = html_path.stem.replace("relatorio_", "").replace("_", " ")
@@ -208,7 +208,7 @@ def main() -> None:
         resumo_executivo = gerar_resumo_executivo(unidade_nome, df_base_total)
         screenshot_path = capturar_screenshot_relatorio(html_path)
         
-        github_pages_link = f"https://ufcsebrae.github.io/PlanNatureza/docs/{html_path.name}"
+        github_pages_link = f"https://ufcsebrae.github.io/PlanNatureza/{html_path.name}"
         
         corpo_email = f"""
         <html><body>

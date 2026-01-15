@@ -1,0 +1,161 @@
+/* docs/static/style.css */
+
+/* --- Variáveis de Cor para Fácil Customização --- */
+:root {
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #495057;
+    --header-bg: #2c3e50;
+    --header-text: #ffffff;
+    --primary-color: #3498db;
+    --accent-color: #2980b9;
+    --kpi-value-color: #2c3e50;
+    --green-text: #27ae60;
+    --red-text: #c0392b;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+/* --- Modo Escuro --- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --card-bg: #2c2c2c;
+        --text-color: #bdc3c7;
+        --header-bg: #1f2933;
+        --header-text: #ecf0f1;
+        --primary-color: #3498db;
+        --accent-color: #5dade2;
+        --kpi-value-color: #ecf0f1;
+        --green-text: #2ecc71;
+        --red-text: #e74c3c;
+        --border-color: #4a4a4a;
+        --shadow-color: rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* --- Estrutura e Layout --- */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+}
+
+.container-fluid {
+    max-width: 1400px;
+    margin: auto;
+}
+
+/* --- Tipografia e Cabeçalhos --- */
+.header {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    padding: 20px 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.header h2 {
+    margin: 5px 0 0 0;
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--accent-color);
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    margin-bottom: 30px;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--kpi-value-color);
+}
+
+/* --- KPIs da Visão Geral --- */
+.kpi-card {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--kpi-value-color);
+    line-height: 1.2;
+}
+
+.kpi-comparison.positive {
+    color: var(--green-text);
+}
+
+.kpi-comparison.negative {
+    color: var(--red-text);
+}
+
+.kpi-comparison {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* --- Gráficos --- */
+.plotly-graph-div {
+    min-height: 400px;
+}
+
+/* --- Tabelas --- */
+.table-responsive {
+    max-height: 500px;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+.table {
+    margin-bottom: 0;
+    color: var(--text-color);
+}
+.table thead th {
+    background-color: var(--bg-color);
+    border-top: none;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+}
+.table td, .table th {
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+.table tbody tr:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+.table td:not(:first-child), .table th:not(:first-child) {
+    text-align: right;
+}
+
+/* --- Responsividade --- */
+@media (max-width: 768px) {
+    body { padding: 10px; }
+    .kpi-card { border-bottom: 1px solid var(--border-color); }
+    .kpi-card:last-child { border-bottom: none; }
+}
