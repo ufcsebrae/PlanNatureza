@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Execução Orçamentária 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        .chart-container { position: relative; width: 100%; height: 350px; margin: auto; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; height: 100%; }
+        .text-primary { color: #4F46E5; }
+    </style>
+</head>
+<body class="antialiased">
+    <nav class="bg-white shadow-sm sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between h-16"><div class="flex items-center"><span class="text-2xl font-bold text-primary tracking-tight">Monitoramento Orçamentário 2025</span></div></div></div></nav>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Visão Geral da Execução: SUDOESTE PAULISTA</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500"><h3 class="font-bold text-blue-800">Projetos Exclusivos</h3><p class="text-sm text-blue-700 mt-1">Projetos cujo orçamento pertence a uma <strong>única unidade</strong>.</p></div>
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500"><h3 class="font-bold text-green-800">Projetos Compartilhados</h3><p class="text-sm text-green-700 mt-1">Projetos que envolvem <strong>duas ou mais unidades</strong>.</p></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="card border-l-4 border-indigo-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Total</h3><p class="text-3xl font-bold text-gray-900 mt-2">90.4%</p><p class="mt-1 text-sm text-gray-500">R$ 4.91 M de R$ 5.43 M</p></div>
+            <div class="card border-l-4 border-blue-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Exclusivos</h3><p class="text-3xl font-bold text-gray-900 mt-2">92.0%</p><p class="mt-1 text-sm text-gray-500">R$ 704.0 k de R$ 765.6 k</p></div>
+            <div class="card border-l-4 border-green-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Compartilhados</h3><p class="text-3xl font-bold text-gray-900 mt-2">90.1%</p><p class="mt-1 text-sm text-gray-500">R$ 4.21 M de R$ 4.67 M</p></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10"><div class="lg:col-span-3"><div class="card"><h2 class="text-xl font-bold text-gray-800">Evolução Mensal: Executado</h2><p class="text-sm text-gray-500 mt-1 mb-6">Comparativo da execução por tipo de projeto.</p><div class="chart-container"><canvas id="trendChart"></canvas></div></div></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapExclusivo" class="chart-container"></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapCompartilhado" class="chart-container"></div></div>
+        </div>
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Orçamento Ocioso por Projeto (Top 7)</h2>
+                <p class="text-sm text-gray-500 mb-4">Maiores saldos não executados (Cálculo: Valor Planejado - Valor Executado), detalhados por tipo de projeto.</p>
+                <div class="chart-container" style="height: 400px;"><canvas id="idleBudgetChart"></canvas></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedExclusivoChart"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedCompartilhadoChart"></canvas></div></div>
+        </div>
+    </main>
+    
+    <script id="data-island" type="application/json">{"trend": {"labels": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"], "executed_total": [321475.32999999996, 317302.0, 338057.94999999995, 412273.29, 366839.23000000004, 402969.6599999998, 418982.49000000005, 462076.52, 403902.76999999996, 455278.22000000003, 549547.84, 460794.25], "executed_exclusivo": [21318.73, 8649.42, 6726.049999999999, 61894.37, 15462.41, 87842.29999999999, 115902.77, 141487.15, 40079.77, 91755.67, 24717.7, 88194.59], "executed_compartilhado": [300156.6, 308652.58, 331331.89999999997, 350378.92, 351376.82000000007, 315127.3599999998, 303079.72000000003, 320589.37000000005, 363822.99999999994, 363522.55000000005, 524830.14, 372599.66]}, "treemap_exclusivo": {"labels": ["Alugu\u00e9is E Encargos", "Demais Custos E Despesas Gerais", "Despesas Com Viagens", "Despesas Financeiras", "Despesas Tribut\u00e1rias", "Materiais De Consumo", "Servi\u00e7os Contratados", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Servi\u00e7os Especializados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o"], "parents": ["", "", "", "", "", "", "", "", "", ""], "values": [18000.0, 25360.45, 163928.69, 69.0, 1898.6699999999998, 20464.57, 341527.81000000006, 1858.8100000000002, 126715.70000000001, 4207.23], "projetos": ["- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 18.0 k)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 25.4 k)", "- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 129.9 k)<br>- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 34.0 k)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 62.10)<br>- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 6.90)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 1.9 k)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 18.9 k)<br>- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 1.5 k)", "- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 333.9 k)<br>- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 7.7 k)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 1.7 k)<br>- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 154.90)", "- SP - Atendimento Presencial ER Sudoeste Paulista (R$ 126.7 k)<br>- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 32.41)", "- Suporte a Neg\u00f3cios - ER Sudoeste Paulista (R$ 4.2 k)"]}, "treemap_compartilhado": {"labels": ["Alugu\u00e9is E Encargos", "Benef\u00edcios Sociais", "Despesas Com Viagens", "Despesas Tribut\u00e1rias", "Encargos Sociais", "Materiais De Consumo", "Pessoal", "Servi\u00e7os Contratados", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Servi\u00e7os Especializados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o"], "parents": ["", "", "", "", "", "", "", "", "", "", ""], "values": [160210.16, 783821.23, 8845.0, 2785.68, 178320.72, 42328.91, 2407959.59, 586019.9700000001, 10449.83, 19498.23, 5229.3], "projetos": ["- Custeio Administrativo - ERs e Sede (R$ 160.2 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 783.8 k)", "- Custeio Administrativo - ERs e Sede (R$ 8.0 k)<br>- Conex\u00f5es Corporativas Sebrae-SP Intercement (R$ 826.14)", "- Gest\u00e3o Operacional - Tributos (R$ 2.8 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 178.3 k)", "- Custeio Administrativo - ERs e Sede (R$ 42.3 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 2.41 M)", "- Custeio Administrativo - ERs e Sede (R$ 427.1 k)<br>- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 125.1 k)<br>- Aprendizes e Estagi\u00e1rios (R$ 33.8 k)", "- Custeio Administrativo - ERs e Sede (R$ 10.4 k)", "- Conex\u00f5es Corporativas Sebrae-SP Intercement (R$ 17.7 k)<br>- Aprendizes e Estagi\u00e1rios (R$ 1.8 k)", "- Custeio Administrativo - ERs e Sede (R$ 5.2 k)"]}, "idle_budget": {"labels": ["Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios", "Conex\u00f5es Corporativas Sebrae-SP Intercement", "SP - Atendimento Presencial ER Sudoeste Paulista", "Custeio Administrativo - ERs e Sede", "Aprendizes e Estagi\u00e1rios", "Suporte a Neg\u00f3cios - ER Sudoeste Paulista", "Gest\u00e3o Operacional - Tributos"], "values_exclusivo": [0.0, 0.0, 59271.96999999999, 0.0, 0.0, 2274.099999999998, 0.0], "values_compartilhado": [243836.6600000001, 173473.86, 0.0, 39617.100000000006, 3498.4399999999996, 0.0, 214.32000000000016], "detalhes_exclusivo": [[], [], ["- Gera\u00e7\u00e3o de Neg\u00f3cios: R$ 33.6 k", "- Gest\u00e3o e Monitoramento: R$ 15.0 k", "- Credenciamento: R$ 4.8 k"], [], [], ["- Escrit\u00f3rio Regional: R$ 2.3 k", "- Sebrae Aqui: R$ 0.12"], []], "detalhes_compartilhado": [["- Rem. de RH - ER Sudoeste Paulista: R$ 243.8 k"], ["- Encadeamento Produtivo - Sudoeste Paulista: R$ 173.5 k"], [], ["- ER Itapeva: R$ 39.6 k"], ["- ER Sudoeste Paulista - Itapeva: R$ 3.5 k"], [], ["- ER Sudoeste Paulista: R$ 214.32"]]}, "unplanned_exclusivo": {"labels": ["Materiais De Consumo", "Servi\u00e7os Contratados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o", "Despesas Tribut\u00e1rias", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Despesas Financeiras", "Servi\u00e7os Especializados"], "values": [20464.57, 7675.84, 4207.23, 1898.6699999999998, 154.9, 69.0, 32.41], "projetos": [["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 18.9 k", "- SP - Atendimento Presencial ER Sudoeste Paulista: R$ 1.5 k"], ["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 7.7 k"], ["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 4.2 k"], ["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 1.9 k"], ["- SP - Atendimento Presencial ER Sudoeste Paulista: R$ 154.90"], ["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 62.10", "- SP - Atendimento Presencial ER Sudoeste Paulista: R$ 6.90"], ["- Suporte a Neg\u00f3cios - ER Sudoeste Paulista: R$ 32.41"]]}, "unplanned_compartilhado": {"labels": ["Servi\u00e7os Especializados", "Despesas Com Viagens"], "values": [19498.23, 8845.0], "projetos": [["- Conex\u00f5es Corporativas Sebrae-SP Intercement: R$ 17.7 k", "- Aprendizes e Estagi\u00e1rios: R$ 1.8 k"], ["- Custeio Administrativo - ERs e Sede: R$ 8.0 k", "- Conex\u00f5es Corporativas Sebrae-SP Intercement: R$ 826.14"]]}}</script>
+
+    <script>
+        const chartData = JSON.parse(document.getElementById('data-island').textContent);
+        
+        function createTreemap(elementId, data, colorscale) {
+            if (data && data.labels && data.labels.length > 0) {
+                const trace = { type: 'treemap', labels: data.labels, parents: data.parents, values: data.values, customdata: data.projetos, hovertemplate: '<b>%{label}</b><br>Valor Executado: %{value:,.2f}<br><br><b>Principais Projetos:</b><br>%{customdata}<extra></extra>', textinfo: 'label+value+percent root', marker: { colorscale: colorscale, reversescale: true } };
+                Plotly.newPlot(elementId, [trace], { margin: {t: 10, l: 10, r: 10, b: 10}, font: { family: 'Roboto' } }, {responsive: true, displayModeBar: false});
+            } else { document.getElementById(elementId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+        createTreemap('treemapExclusivo', chartData.treemap_exclusivo, 'Blues');
+        createTreemap('treemapCompartilhado', chartData.treemap_compartilhado, 'Greens');
+
+        new Chart(document.getElementById('trendChart').getContext('2d'), {
+            type: 'line', data: { labels: chartData.trend.labels, datasets: [ { label: 'Executado (Total)', data: chartData.trend.executed_total, borderColor: '#4338CA', fill: false, tension: 0.3 }, { label: 'Exclusivos', data: chartData.trend.executed_exclusivo, borderColor: '#3B82F6', fill: false, tension: 0.3, borderDash: [5, 5] }, { label: 'Compartilhados', data: chartData.trend.executed_compartilhado, borderColor: '#10B981', fill: false, tension: 0.3, borderDash: [5, 5] } ] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, x: { grid: { display: false } } } }
+        });
+        
+        function createBarChart(canvasId, chartData, title, color) {
+             if (chartData && chartData.labels && chartData.labels.length > 0) {
+                new Chart(document.getElementById(canvasId).getContext('2d'), { type: 'bar', data: { labels: chartData.labels, datasets: [{ label: title, data: chartData.values, backgroundColor: color, meta: chartData.projetos }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const detalhes = item.dataset.meta[item.dataIndex] || []; return detalhes.length > 0 ? ['Principais Projetos:'].concat(detalhes) : ''; } } } }, scales: { x: { ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } } } }
+                });
+            } else { document.getElementById(canvasId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+
+        new Chart(document.getElementById('idleBudgetChart').getContext('2d'), {
+            type: 'bar', data: { labels: chartData.idle_budget.labels, datasets: [ { label: 'Exclusivos', data: chartData.idle_budget.values_exclusivo, backgroundColor: '#3B82F6', meta: chartData.idle_budget.detalhes_exclusivo }, { label: 'Compartilhados', data: chartData.idle_budget.values_compartilhado, backgroundColor: '#10B981', meta: chartData.idle_budget.detalhes_compartilhado } ] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const acoes = item.dataset.meta[item.dataIndex] || []; return acoes.length > 0 ? ['Principais Ações:'].concat(acoes) : ''; } } } }, scales: { x: { stacked: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, y: { stacked: true } } }
+        });
+
+        createBarChart('unplannedExclusivoChart', chartData.unplanned_exclusivo, 'Executado Sem Orçamento (Exclusivos)', '#EF4444');
+        createBarChart('unplannedCompartilhadoChart', chartData.unplanned_compartilhado, 'Executado Sem Orçamento (Compartilhados)', '#D97706');
+    </script>
+</body>
+</html>

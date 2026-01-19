@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Execução Orçamentária 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        .chart-container { position: relative; width: 100%; height: 350px; margin: auto; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; height: 100%; }
+        .text-primary { color: #4F46E5; }
+    </style>
+</head>
+<body class="antialiased">
+    <nav class="bg-white shadow-sm sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between h-16"><div class="flex items-center"><span class="text-2xl font-bold text-primary tracking-tight">Monitoramento Orçamentário 2025</span></div></div></div></nav>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Visão Geral da Execução: ACESSO A MERCADO E SERVIÇOS FINANCEIROS</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500"><h3 class="font-bold text-blue-800">Projetos Exclusivos</h3><p class="text-sm text-blue-700 mt-1">Projetos cujo orçamento pertence a uma <strong>única unidade</strong>.</p></div>
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500"><h3 class="font-bold text-green-800">Projetos Compartilhados</h3><p class="text-sm text-green-700 mt-1">Projetos que envolvem <strong>duas ou mais unidades</strong>.</p></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="card border-l-4 border-indigo-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Total</h3><p class="text-3xl font-bold text-gray-900 mt-2">98.6%</p><p class="mt-1 text-sm text-gray-500">R$ 44.03 M de R$ 44.65 M</p></div>
+            <div class="card border-l-4 border-blue-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Exclusivos</h3><p class="text-3xl font-bold text-gray-900 mt-2">98.6%</p><p class="mt-1 text-sm text-gray-500">R$ 37.32 M de R$ 37.85 M</p></div>
+            <div class="card border-l-4 border-green-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Compartilhados</h3><p class="text-3xl font-bold text-gray-900 mt-2">98.7%</p><p class="mt-1 text-sm text-gray-500">R$ 6.71 M de R$ 6.80 M</p></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10"><div class="lg:col-span-3"><div class="card"><h2 class="text-xl font-bold text-gray-800">Evolução Mensal: Executado</h2><p class="text-sm text-gray-500 mt-1 mb-6">Comparativo da execução por tipo de projeto.</p><div class="chart-container"><canvas id="trendChart"></canvas></div></div></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapExclusivo" class="chart-container"></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapCompartilhado" class="chart-container"></div></div>
+        </div>
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Orçamento Ocioso por Projeto (Top 7)</h2>
+                <p class="text-sm text-gray-500 mb-4">Maiores saldos não executados (Cálculo: Valor Planejado - Valor Executado), detalhados por tipo de projeto.</p>
+                <div class="chart-container" style="height: 400px;"><canvas id="idleBudgetChart"></canvas></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedExclusivoChart"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedCompartilhadoChart"></canvas></div></div>
+        </div>
+    </main>
+    
+    <script id="data-island" type="application/json">{"trend": {"labels": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"], "executed_total": [574042.99, 600830.3299999998, 706886.22, 1476266.04, 2847912.4200000004, 3635827.44, 8403098.68, 4333941.64, 6599739.38, 5181483.609999999, 5199663.880000001, 4466254.72], "executed_exclusivo": [156446.47, 151228.47, 219360.01, 316142.07, 2354275.2, 3120261.5, 7941983.5600000005, 3860486.19, 6153724.92, 4713477.43, 4467575.07, 3861113.06], "executed_compartilhado": [417596.52, 449601.85999999987, 487526.20999999996, 1160123.97, 493637.2200000001, 515565.93999999977, 461115.12000000005, 473455.45000000007, 446014.45999999996, 468006.17999999993, 732088.81, 605141.6599999999]}, "treemap_exclusivo": {"labels": ["Alugu\u00e9is E Encargos", "Demais Custos E Despesas Gerais", "Despesas Com Viagens", "Despesas Financeiras", "Despesas Tribut\u00e1rias", "Materiais De Consumo", "Servi\u00e7os Contratados", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Servi\u00e7os Especializados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o"], "parents": ["", "", "", "", "", "", "", "", "", ""], "values": [5358391.63, 12824.0, 557079.55, 13.8, 5211.7, 40598.46, 6649229.28, 112.0, 24631056.12, 61557.409999999996], "projetos": ["- Venda Mais (R$ 5.36 M)", "- Venda Mais (R$ 12.8 k)", "- Venda Mais (R$ 326.5 k)<br>- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 192.7 k)<br>- Acesso a Capital (R$ 37.9 k)", "- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 13.80)", "- Venda Mais (R$ 5.2 k)", "- Venda Mais (R$ 37.5 k)<br>- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 3.1 k)", "- Venda Mais (R$ 6.55 M)<br>- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 99.4 k)", "- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 112.00)", "- Acesso a Capital (R$ 23.89 M)<br>- Venda Mais (R$ 738.2 k)", "- Venda Mais (R$ 60.1 k)<br>- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros (R$ 1.4 k)"]}, "treemap_compartilhado": {"labels": ["Benef\u00edcios Sociais", "Despesas Com Viagens", "Encargos Sociais", "Pessoal", "Servi\u00e7os Contratados", "Servi\u00e7os Especializados"], "parents": ["", "", "", "", "", ""], "values": [1147116.2, 32081.559999999998, 310800.57, 4178879.4099999997, 186241.16, 854754.5], "projetos": ["- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 1.15 M)", "- Clube de Neg\u00f3cios (R$ 32.1 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 310.8 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 4.18 M)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 173.4 k)<br>- Custeio Administrativo - ERs e Sede (R$ 9.0 k)<br>- Clube de Neg\u00f3cios (R$ 3.9 k)", "- Clube de Neg\u00f3cios (R$ 841.0 k)<br>- Custeio Administrativo - ERs e Sede (R$ 13.8 k)"]}, "idle_budget": {"labels": ["Venda Mais", "Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros", "Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios", "Clube de Neg\u00f3cios", "Acesso a Capital", "Custeio Administrativo - ERs e Sede"], "values_exclusivo": [438975.39000000013, 78227.36000000002, 0.0, 0.0, 19223.299999998882, 0.0], "values_compartilhado": [0.0, 0.0, 58270.660000000236, 24858.379999999976, 0.0, 6171.560000000001], "detalhes_exclusivo": [["- Neg\u00f3cios Digitais / Transforma\u00e7\u00e3o Digital: R$ 118.8 k", "- FEIRAS REGIONAIS: R$ 108.1 k", "- Rodadas de Neg\u00f3cio - Encontro de Neg\u00f3cios: R$ 89.8 k"], ["- Unidade Acesso a Mercados e Servi\u00e7os Financeiros: R$ 78.2 k"], [], [], ["- Assessorias: R$ 19.2 k"], []], "detalhes_compartilhado": [[], [], ["- Rem. de RH \u2013 Acesso a Mercado e Servi\u00e7os Financeiros: R$ 58.3 k"], ["- GEST\u00c3O DO PROGRAMA CLUBE DE NEG\u00d3CIOS: R$ 14.5 k", "- Comercio Brasil: R$ 10.4 k"], [], ["- Unidade de Acesso a Mercados e Servi\u00e7os Financeiros: R$ 6.2 k"]]}, "unplanned_exclusivo": {"labels": ["Servi\u00e7os Contratados", "Despesas Com Viagens", "Despesas Tribut\u00e1rias", "Materiais De Consumo", "Despesas Financeiras"], "values": [99443.19, 37904.61, 5211.7, 3148.06, 13.8], "projetos": [["- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros: R$ 99.4 k"], ["- Acesso a Capital: R$ 37.9 k"], ["- Venda Mais: R$ 5.2 k"], ["- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros: R$ 3.1 k"], ["- Suporte a Neg\u00f3cios - Unidade Acesso a Mercado e Servi\u00e7os Financeiros: R$ 13.80"]]}, "unplanned_compartilhado": {"labels": ["Servi\u00e7os Especializados"], "values": [13767.189999999999], "projetos": [["- Custeio Administrativo - ERs e Sede: R$ 13.8 k"]]}}</script>
+
+    <script>
+        const chartData = JSON.parse(document.getElementById('data-island').textContent);
+        
+        function createTreemap(elementId, data, colorscale) {
+            if (data && data.labels && data.labels.length > 0) {
+                const trace = { type: 'treemap', labels: data.labels, parents: data.parents, values: data.values, customdata: data.projetos, hovertemplate: '<b>%{label}</b><br>Valor Executado: %{value:,.2f}<br><br><b>Principais Projetos:</b><br>%{customdata}<extra></extra>', textinfo: 'label+value+percent root', marker: { colorscale: colorscale, reversescale: true } };
+                Plotly.newPlot(elementId, [trace], { margin: {t: 10, l: 10, r: 10, b: 10}, font: { family: 'Roboto' } }, {responsive: true, displayModeBar: false});
+            } else { document.getElementById(elementId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+        createTreemap('treemapExclusivo', chartData.treemap_exclusivo, 'Blues');
+        createTreemap('treemapCompartilhado', chartData.treemap_compartilhado, 'Greens');
+
+        new Chart(document.getElementById('trendChart').getContext('2d'), {
+            type: 'line', data: { labels: chartData.trend.labels, datasets: [ { label: 'Executado (Total)', data: chartData.trend.executed_total, borderColor: '#4338CA', fill: false, tension: 0.3 }, { label: 'Exclusivos', data: chartData.trend.executed_exclusivo, borderColor: '#3B82F6', fill: false, tension: 0.3, borderDash: [5, 5] }, { label: 'Compartilhados', data: chartData.trend.executed_compartilhado, borderColor: '#10B981', fill: false, tension: 0.3, borderDash: [5, 5] } ] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, x: { grid: { display: false } } } }
+        });
+        
+        function createBarChart(canvasId, chartData, title, color) {
+             if (chartData && chartData.labels && chartData.labels.length > 0) {
+                new Chart(document.getElementById(canvasId).getContext('2d'), { type: 'bar', data: { labels: chartData.labels, datasets: [{ label: title, data: chartData.values, backgroundColor: color, meta: chartData.projetos }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const detalhes = item.dataset.meta[item.dataIndex] || []; return detalhes.length > 0 ? ['Principais Projetos:'].concat(detalhes) : ''; } } } }, scales: { x: { ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } } } }
+                });
+            } else { document.getElementById(canvasId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+
+        new Chart(document.getElementById('idleBudgetChart').getContext('2d'), {
+            type: 'bar', data: { labels: chartData.idle_budget.labels, datasets: [ { label: 'Exclusivos', data: chartData.idle_budget.values_exclusivo, backgroundColor: '#3B82F6', meta: chartData.idle_budget.detalhes_exclusivo }, { label: 'Compartilhados', data: chartData.idle_budget.values_compartilhado, backgroundColor: '#10B981', meta: chartData.idle_budget.detalhes_compartilhado } ] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const acoes = item.dataset.meta[item.dataIndex] || []; return acoes.length > 0 ? ['Principais Ações:'].concat(acoes) : ''; } } } }, scales: { x: { stacked: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, y: { stacked: true } } }
+        });
+
+        createBarChart('unplannedExclusivoChart', chartData.unplanned_exclusivo, 'Executado Sem Orçamento (Exclusivos)', '#EF4444');
+        createBarChart('unplannedCompartilhadoChart', chartData.unplanned_compartilhado, 'Executado Sem Orçamento (Compartilhados)', '#D97706');
+    </script>
+</body>
+</html>

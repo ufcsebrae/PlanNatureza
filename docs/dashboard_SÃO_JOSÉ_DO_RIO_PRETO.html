@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Execução Orçamentária 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #F3F4F6; color: #1F2937; }
+        .chart-container { position: relative; width: 100%; height: 350px; margin: auto; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 1.5rem; height: 100%; }
+        .text-primary { color: #4F46E5; }
+    </style>
+</head>
+<body class="antialiased">
+    <nav class="bg-white shadow-sm sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between h-16"><div class="flex items-center"><span class="text-2xl font-bold text-primary tracking-tight">Monitoramento Orçamentário 2025</span></div></div></div></nav>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Visão Geral da Execução: SÃO JOSÉ DO RIO PRETO</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500"><h3 class="font-bold text-blue-800">Projetos Exclusivos</h3><p class="text-sm text-blue-700 mt-1">Projetos cujo orçamento pertence a uma <strong>única unidade</strong>.</p></div>
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500"><h3 class="font-bold text-green-800">Projetos Compartilhados</h3><p class="text-sm text-green-700 mt-1">Projetos que envolvem <strong>duas ou mais unidades</strong>.</p></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="card border-l-4 border-indigo-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Total</h3><p class="text-3xl font-bold text-gray-900 mt-2">97.1%</p><p class="mt-1 text-sm text-gray-500">R$ 8.66 M de R$ 8.92 M</p></div>
+            <div class="card border-l-4 border-blue-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Exclusivos</h3><p class="text-3xl font-bold text-gray-900 mt-2">86.3%</p><p class="mt-1 text-sm text-gray-500">R$ 1.30 M de R$ 1.50 M</p></div>
+            <div class="card border-l-4 border-green-500"><h3 class="text-sm font-medium text-gray-500 uppercase">Execução Proj. Compartilhados</h3><p class="text-3xl font-bold text-gray-900 mt-2">99.3%</p><p class="mt-1 text-sm text-gray-500">R$ 7.36 M de R$ 7.41 M</p></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10"><div class="lg:col-span-3"><div class="card"><h2 class="text-xl font-bold text-gray-800">Evolução Mensal: Executado</h2><p class="text-sm text-gray-500 mt-1 mb-6">Comparativo da execução por tipo de projeto.</p><div class="chart-container"><canvas id="trendChart"></canvas></div></div></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapExclusivo" class="chart-container"></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Estrutura de Gastos (Proj. Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Proporção do valor executado por natureza.</p><div id="treemapCompartilhado" class="chart-container"></div></div>
+        </div>
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Orçamento Ocioso por Projeto (Top 7)</h2>
+                <p class="text-sm text-gray-500 mb-4">Maiores saldos não executados (Cálculo: Valor Planejado - Valor Executado), detalhados por tipo de projeto.</p>
+                <div class="chart-container" style="height: 400px;"><canvas id="idleBudgetChart"></canvas></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Exclusivos)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedExclusivoChart"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-2">Execução Sem Planejamento (Compartilhados)</h2><p class="text-sm text-gray-500 mb-4">Gastos em naturezas onde o orçamento era zero.</p><div class="chart-container"><canvas id="unplannedCompartilhadoChart"></canvas></div></div>
+        </div>
+    </main>
+    
+    <script id="data-island" type="application/json">{"trend": {"labels": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"], "executed_total": [567241.7899999999, 582571.9700000001, 648041.57, 636433.29, 738484.4700000002, 731475.2700000003, 704177.3999999999, 733181.2699999999, 767488.65, 777985.59, 999984.8200000001, 773803.5000000001], "executed_exclusivo": [53076.09, 12177.42, 31561.2, 58126.56, 148655.36000000002, 129748.65, 117028.97, 154108.53, 178394.28, 164871.72, 71152.56, 179399.1], "executed_compartilhado": [514165.6999999999, 570394.55, 616480.37, 578306.7300000001, 589829.1100000002, 601726.6200000002, 587148.4299999999, 579072.7399999999, 589094.37, 613113.87, 928832.26, 594404.4000000001]}, "treemap_exclusivo": {"labels": ["Alugu\u00e9is E Encargos", "Demais Custos E Despesas Gerais", "Despesas Com Viagens", "Despesas Financeiras", "Despesas Tribut\u00e1rias", "Encargos Sociais S/Servi\u00e7os De Terceiros", "Materiais De Consumo", "Servi\u00e7os Contratados", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Servi\u00e7os Especializados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o"], "parents": ["", "", "", "", "", "", "", "", "", "", ""], "values": [23750.0, 60920.75, 242748.33, 96.6, 2164.18, 140.0, 18897.91, 257352.55, 1696.32, 688356.5, 2177.3], "projetos": ["- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto (R$ 23.8 k)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 60.8 k)<br>- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto (R$ 90.64)", "- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto (R$ 213.0 k)<br>- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 29.8 k)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 96.60)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 2.2 k)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 140.00)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 18.9 k)", "- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto (R$ 249.0 k)<br>- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 8.3 k)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 1.7 k)", "- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto (R$ 688.4 k)", "- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto (R$ 2.2 k)"]}, "treemap_compartilhado": {"labels": ["Alugu\u00e9is E Encargos", "Benef\u00edcios Sociais", "Despesas Com Viagens", "Despesas Tribut\u00e1rias", "Encargos Sociais", "Materiais De Consumo", "Pessoal", "Servi\u00e7os Contratados", "Servi\u00e7os De Comunica\u00e7\u00e3o Em Geral", "Servi\u00e7os Especializados", "Servi\u00e7os Gr\u00e1ficos E De Reprodu\u00e7\u00e3o"], "parents": ["", "", "", "", "", "", "", "", "", "", ""], "values": [188689.62, 1518525.11, 9210.86, 6880.95, 340615.26, 32350.16, 4638836.180000001, 588014.32, 10935.550000000001, 16216.92, 12294.220000000001], "projetos": ["- Custeio Administrativo - ERs e Sede (R$ 188.7 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 1.52 M)", "- Custeio Administrativo - ERs e Sede (R$ 9.2 k)", "- Gest\u00e3o Operacional - Tributos (R$ 6.9 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 340.6 k)", "- Custeio Administrativo - ERs e Sede (R$ 32.4 k)", "- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 4.64 M)", "- Custeio Administrativo - ERs e Sede (R$ 365.2 k)<br>- Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios (R$ 179.4 k)<br>- Aprendizes e Estagi\u00e1rios (R$ 43.4 k)", "- Custeio Administrativo - ERs e Sede (R$ 10.9 k)", "- Custeio Administrativo - ERs e Sede (R$ 13.1 k)<br>- Aprendizes e Estagi\u00e1rios (R$ 3.1 k)", "- Custeio Administrativo - ERs e Sede (R$ 12.3 k)"]}, "idle_budget": {"labels": ["Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto", "SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto", "Custeio Administrativo - ERs e Sede", "Suporte a Neg\u00f3cios - Remunera\u00e7\u00e3o de Recursos Humanos Relacionado a Neg\u00f3cios", "Aprendizes e Estagi\u00e1rios", "Gest\u00e3o Operacional - Tributos", "Clube de Neg\u00f3cios"], "values_exclusivo": [119096.32, 86745.23999999999, 0.0, 0.0, 0.0, 0.0, 0.0], "values_compartilhado": [0.0, 0.0, 30512.530000000002, 16415.969999999616, 3755.2999999999993, 19.050000000000182, 10.0], "detalhes_exclusivo": [["- Escrit\u00f3rio Regional: R$ 119.1 k"], ["- Gera\u00e7\u00e3o de Neg\u00f3cios: R$ 57.2 k", "- Gest\u00e3o e Monitoramento: R$ 26.1 k", "- Credenciamento: R$ 3.4 k"], [], [], [], [], []], "detalhes_compartilhado": [[], [], ["- ER S\u00c3O JOS\u00c9 DO RIO PRETO: R$ 30.5 k"], ["- Rem. de RH - ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 16.4 k"], ["- ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 3.8 k"], ["- ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 19.05"], ["- ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 10.00"]]}, "unplanned_exclusivo": {"labels": ["Encargos Sociais S/Servi\u00e7os De Terceiros", "Despesas Financeiras", "Demais Custos E Despesas Gerais"], "values": [140.0, 96.6, 90.64], "projetos": [["- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 140.00"], ["- Suporte a Neg\u00f3cios - ER S\u00e3o Jos\u00e9 do Rio Preto: R$ 96.60"], ["- SP - Atendimento Presencial ER S.Jos\u00e9 do Rio Preto: R$ 90.64"]]}, "unplanned_compartilhado": {"labels": ["Despesas Com Viagens", "Servi\u00e7os Especializados"], "values": [9210.86, 3103.15], "projetos": [["- Custeio Administrativo - ERs e Sede: R$ 9.2 k"], ["- Aprendizes e Estagi\u00e1rios: R$ 3.1 k"]]}}</script>
+
+    <script>
+        const chartData = JSON.parse(document.getElementById('data-island').textContent);
+        
+        function createTreemap(elementId, data, colorscale) {
+            if (data && data.labels && data.labels.length > 0) {
+                const trace = { type: 'treemap', labels: data.labels, parents: data.parents, values: data.values, customdata: data.projetos, hovertemplate: '<b>%{label}</b><br>Valor Executado: %{value:,.2f}<br><br><b>Principais Projetos:</b><br>%{customdata}<extra></extra>', textinfo: 'label+value+percent root', marker: { colorscale: colorscale, reversescale: true } };
+                Plotly.newPlot(elementId, [trace], { margin: {t: 10, l: 10, r: 10, b: 10}, font: { family: 'Roboto' } }, {responsive: true, displayModeBar: false});
+            } else { document.getElementById(elementId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+        createTreemap('treemapExclusivo', chartData.treemap_exclusivo, 'Blues');
+        createTreemap('treemapCompartilhado', chartData.treemap_compartilhado, 'Greens');
+
+        new Chart(document.getElementById('trendChart').getContext('2d'), {
+            type: 'line', data: { labels: chartData.trend.labels, datasets: [ { label: 'Executado (Total)', data: chartData.trend.executed_total, borderColor: '#4338CA', fill: false, tension: 0.3 }, { label: 'Exclusivos', data: chartData.trend.executed_exclusivo, borderColor: '#3B82F6', fill: false, tension: 0.3, borderDash: [5, 5] }, { label: 'Compartilhados', data: chartData.trend.executed_compartilhado, borderColor: '#10B981', fill: false, tension: 0.3, borderDash: [5, 5] } ] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, x: { grid: { display: false } } } }
+        });
+        
+        function createBarChart(canvasId, chartData, title, color) {
+             if (chartData && chartData.labels && chartData.labels.length > 0) {
+                new Chart(document.getElementById(canvasId).getContext('2d'), { type: 'bar', data: { labels: chartData.labels, datasets: [{ label: title, data: chartData.values, backgroundColor: color, meta: chartData.projetos }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const detalhes = item.dataset.meta[item.dataIndex] || []; return detalhes.length > 0 ? ['Principais Projetos:'].concat(detalhes) : ''; } } } }, scales: { x: { ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } } } }
+                });
+            } else { document.getElementById(canvasId).innerHTML = `<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados para exibir.</div>`; }
+        }
+
+        new Chart(document.getElementById('idleBudgetChart').getContext('2d'), {
+            type: 'bar', data: { labels: chartData.idle_budget.labels, datasets: [ { label: 'Exclusivos', data: chartData.idle_budget.values_exclusivo, backgroundColor: '#3B82F6', meta: chartData.idle_budget.detalhes_exclusivo }, { label: 'Compartilhados', data: chartData.idle_budget.values_compartilhado, backgroundColor: '#10B981', meta: chartData.idle_budget.detalhes_compartilhado } ] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { footer: function(tooltipItems) { const item = tooltipItems[0]; const acoes = item.dataset.meta[item.dataIndex] || []; return acoes.length > 0 ? ['Principais Ações:'].concat(acoes) : ''; } } } }, scales: { x: { stacked: true, ticks: { callback: function(v) { return v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k'; } } }, y: { stacked: true } } }
+        });
+
+        createBarChart('unplannedExclusivoChart', chartData.unplanned_exclusivo, 'Executado Sem Orçamento (Exclusivos)', '#EF4444');
+        createBarChart('unplannedCompartilhadoChart', chartData.unplanned_compartilhado, 'Executado Sem Orçamento (Compartilhados)', '#D97706');
+    </script>
+</body>
+</html>
