@@ -6,7 +6,6 @@ import pandas as pd
 import json
 
 try:
-    # CORREÇÃO: Importando ambas as funções do local correto
     from processamento_dados_base import obter_dados_processados, formatar_brl
 except ImportError:
     logging.basicConfig(level=logging.INFO)
@@ -17,10 +16,7 @@ from config import CONFIG
 
 logger = logging.getLogger(__name__)
 
-# A função formatar_brl foi removida daqui
-
 def obter_unidades_disponiveis(df_base: pd.DataFrame) -> list[str]:
-    # ... (o resto do arquivo permanece o mesmo)
     if df_base is None or df_base.empty: return []
     return sorted(df_base['UNIDADE_FINAL'].unique())
 
@@ -51,14 +47,19 @@ def gerar_relatorio_para_unidade(unidade_alvo: str, df_base_total: pd.DataFrame)
     df_exclusivos = df_unidade[df_unidade['tipo_projeto'] == 'Exclusivo'].copy()
     df_compartilhados = df_unidade[df_unidade['tipo_projeto'] == 'Compartilhado'].copy()
 
+    # Garante que o denominador não seja zero para evitar erros de divisão
+    kpi_total_planejado = df_unidade['Valor_Planejado'].sum()
+    kpi_exclusivo_planejado = df_exclusivos.get('Valor_Planejado', pd.Series([0])).sum()
+    kpi_compartilhado_planejado = df_compartilhados.get('Valor_Planejado', pd.Series([0])).sum()
+
     kpi_dict = {
         "__UNIDADE_ALVO__": unidade_alvo,
-        "__KPI_TOTAL_PERC__": f"{(df_unidade['Valor_Executado'].sum() / df_unidade['Valor_Planejado'].sum() * 100) if df_unidade['Valor_Planejado'].sum() else 0:.1f}%",
-        "__KPI_TOTAL_VALORES__": f"{formatar_brl(df_unidade['Valor_Executado'].sum())} de {formatar_brl(df_unidade['Valor_Planejado'].sum())}",
-        "__KPI_EXCLUSIVO_PERC__": f"{(df_exclusivos['Valor_Executado'].sum() / df_exclusivos['Valor_Planejado'].sum() * 100) if df_exclusivos['Valor_Planejado'].sum() else 0:.1f}%",
-        "__KPI_EXCLUSIVO_VALORES__": f"{formatar_brl(df_exclusivos['Valor_Executado'].sum())} de {formatar_brl(df_exclusivos['Valor_Planejado'].sum())}",
-        "__KPI_COMPARTILHADO_PERC__": f"{(df_compartilhados['Valor_Executado'].sum() / df_compartilhados['Valor_Planejado'].sum() * 100) if df_compartilhados['Valor_Planejado'].sum() else 0:.1f}%",
-        "__KPI_COMPARTILHADO_VALORES__": f"{formatar_brl(df_compartilhados['Valor_Executado'].sum())} de {formatar_brl(df_compartilhados['Valor_Planejado'].sum())}",
+        "__KPI_TOTAL_PERC__": f"{(df_unidade['Valor_Executado'].sum() / kpi_total_planejado * 100) if kpi_total_planejado > 0 else 0:.1f}%",
+        "__KPI_TOTAL_VALORES__": f"{formatar_brl(df_unidade['Valor_Executado'].sum())} de {formatar_brl(kpi_total_planejado)}",
+        "__KPI_EXCLUSIVO_PERC__": f"{(df_exclusivos['Valor_Executado'].sum() / kpi_exclusivo_planejado * 100) if kpi_exclusivo_planejado > 0 else 0:.1f}%",
+        "__KPI_EXCLUSIVO_VALORES__": f"{formatar_brl(df_exclusivos['Valor_Executado'].sum())} de {formatar_brl(kpi_exclusivo_planejado)}",
+        "__KPI_COMPARTILHADO_PERC__": f"{(df_compartilhados['Valor_Executado'].sum() / kpi_compartilhado_planejado * 100) if kpi_compartilhado_planejado > 0 else 0:.1f}%",
+        "__KPI_COMPARTILHADO_VALORES__": f"{formatar_brl(df_compartilhados['Valor_Executado'].sum())} de {formatar_brl(kpi_compartilhado_planejado)}",
     }
     
     dados_graficos = {}
@@ -74,23 +75,117 @@ def gerar_relatorio_para_unidade(unidade_alvo: str, df_base_total: pd.DataFrame)
         if df_agg.empty: return {}
         
         df_agg['total_natureza'] = df_agg.groupby('NATUREZA_FINAL')['Valor_Executado'].transform('sum')
-        df_agg['perc'] = (df_agg['Valor_Executado'] / df_agg['total_natureza']) * 100
+        df_agg['perc'] = (df_agg['total_natureza'] / df_agg['total_natureza'].sum() * 100)
         
         def format_projetos(group):
             top_projetos = group.nlargest(3, 'Valor_Executado')
-            return '<br>'.join([f"- {row.PROJETO} ({row.perc:.1f}%)" for _, row in top_projetos.iterrows()])
-
-        projetos_por_natureza = df_agg.groupby('NATUREZA_FINAL').apply(format_projetos).to_dict()
+            return '<br>'.join([f"- {row.PROJETO} ({formatar_brl(row.Valor_Executado)})" for _, row in top_projetos.iterrows()])
+        
+        projetos_por_natureza = df_agg.groupby('NATUREZA_FINAL').apply(format_projetos, include_groups=False).to_dict()
         df_natureza_sum = df_agg.groupby('NATUREZA_FINAL')['Valor_Executado'].sum().reset_index()
         
         return {'labels': df_natureza_sum['NATUREZA_FINAL'].tolist(), 'parents': [""] * len(df_natureza_sum), 'values': df_natureza_sum['Valor_Executado'].tolist(), 'projetos': df_natureza_sum['NATUREZA_FINAL'].map(projetos_por_natureza).fillna('').tolist()}
 
-    dados_graficos['treemap_exclusivo'] = criar_dados_treemap_com_projetos(df_exclusivos)
-    dados_graficos['treemap_compartilhado'] = criar_dados_treemap_com_projetos(df_compartilhados)
+    dados_graficos['treemap_exclusivo'] = criar_dados_treemap_com_projetos(df_exclusivos, unidade_alvo)
+    dados_graficos['treemap_compartilhado'] = criar_dados_treemap_com_projetos(df_compartilhados, unidade_alvo)
 
-    # Restante das funções de dados...
+    # --- INÍCIO DA CORREÇÃO PARA O GRÁFICO DE ORÇAMENTO OCIOSO ---
+    # 1. Calcular o saldo ocioso DENTRO da unidade de negócio.
+    df_unidade['saldo_nao_executado'] = df_unidade['Valor_Planejado'].fillna(0) - df_unidade['Valor_Executado'].fillna(0)
+
+    # 2. Agrupar por projeto DENTRO da unidade para obter o saldo consolidado de cada projeto.
+    saldos_por_projeto_unidade = df_unidade.groupby(['PROJETO', 'tipo_projeto'])['saldo_nao_executado'].sum().reset_index()
+
+    # 3. Selecionar os 7 maiores saldos ociosos.
+    df_top_ocioso_agg = saldos_por_projeto_unidade[saldos_por_projeto_unidade['saldo_nao_executado'] > 0].nlargest(7, 'saldo_nao_executado')
+
+    # 4. Criar o pivô para o gráfico a partir dos dados JÁ AGREGADOS.
+    df_pivot_ocioso = df_top_ocioso_agg.pivot_table(index='PROJETO', columns='tipo_projeto', values='saldo_nao_executado', fill_value=0)
+    df_pivot_ocioso = df_pivot_ocioso.reindex(df_top_ocioso_agg['PROJETO']) # Manter a ordem do nlargest
+
+    # 5. Buscar os detalhes das ações (tooltips) com base nos projetos selecionados.
+    # Filtra o dataframe da unidade apenas para as ações dos projetos que estão no Top 7.
+    df_detalhes_ocioso = df_unidade[df_unidade['PROJETO'].isin(df_top_ocioso_agg['PROJETO'])]
+
+    def formatar_acoes(group):
+        # Filtra ações com saldo negativo ou zero, ordena e pega as Top 3
+        top_acoes = group[group['saldo_nao_executado'] > 0].nlargest(3, 'saldo_nao_executado')
+        return [f"- {row.ACAO}: {formatar_brl(row.saldo_nao_executado)}" for _, row in top_acoes.iterrows()]
+
+    detalhes_por_projeto = df_detalhes_ocioso.groupby('PROJETO').apply(formatar_acoes, include_groups=False).reindex(df_pivot_ocioso.index)
+
+    # 6. Preparar os dados para o JSON do gráfico
+    detalhes_exclusivo = []
+    detalhes_compartilhado = []
+    
+    # Itera sobre o pivô para garantir que a ordem dos detalhes corresponda à ordem das barras
+    for projeto, row in df_pivot_ocioso.iterrows():
+        detalhe_formatado = detalhes_por_projeto.get(projeto, [])
+        if row.get('Exclusivo', 0) > 0:
+            detalhes_exclusivo.append(detalhe_formatado)
+            detalhes_compartilhado.append([])
+        elif row.get('Compartilhado', 0) > 0:
+            detalhes_compartilhado.append(detalhe_formatado)
+            detalhes_exclusivo.append([])
+        else: # Caso de projeto sem saldo, embora já filtrado
+            detalhes_exclusivo.append([])
+            detalhes_compartilhado.append([])
+
+    dados_graficos['idle_budget'] = {
+        "labels": df_pivot_ocioso.index.tolist(),
+        "values_exclusivo": df_pivot_ocioso.get('Exclusivo', pd.Series(0, index=df_pivot_ocioso.index)).fillna(0).tolist(),
+        "values_compartilhado": df_pivot_ocioso.get('Compartilhado', pd.Series(0, index=df_pivot_ocioso.index)).fillna(0).tolist(),
+        "detalhes_exclusivo": detalhes_exclusivo,
+        "detalhes_compartilhado": detalhes_compartilhado,
+    }
+    # --- FIM DA CORREÇÃO ---
+
+    df_sem_plan = df_unidade[(df_unidade['Valor_Planejado'] <= 0) & (df_unidade['Valor_Executado'] > 0)].copy()
+
+    def criar_dados_exec_sem_plan(df_source):
+        if df_source.empty: return {}
+        df_agg = df_source.groupby(['NATUREZA_FINAL', 'PROJETO'])['Valor_Executado'].sum().reset_index()
+        if df_agg.empty: return {}
+        
+        def formatar_projetos_sp(group):
+            top_projetos = group.nlargest(3, 'Valor_Executado')
+            return [f"- {row.PROJETO}: {formatar_brl(row.Valor_Executado)}" for _, row in top_projetos.iterrows()]
+        
+        df_sum = df_agg.groupby('NATUREZA_FINAL')['Valor_Executado'].sum().sort_values(ascending=False)
+        if df_sum.empty: return {}
+        
+        detalhes_projetos_series = df_agg.groupby('NATUREZA_FINAL').apply(formatar_projetos_sp, include_groups=False).reindex(df_sum.index)
+        detalhes_projetos = [item if isinstance(item, list) else [] for item in detalhes_projetos_series]
+
+        return {
+            "labels": df_sum.index.tolist(),
+            "values": df_sum.values.tolist(),
+            "projetos": detalhes_projetos
+        }
+
+    dados_graficos['unplanned_exclusivo'] = criar_dados_exec_sem_plan(df_sem_plan[df_sem_plan['tipo_projeto'] == 'Exclusivo'])
+    dados_graficos['unplanned_compartilhado'] = criar_dados_exec_sem_plan(df_sem_plan[df_sem_plan['tipo_projeto'] == 'Compartilhado'])
     
     logger.info(f"[{unidade_alvo}] Dados para os gráficos agregados.")
+
+    try:
+        template_path = CONFIG.paths.base_dir / "dashboard_template.html"
+        template_string = template_path.read_text(encoding='utf-8')
+        
+        final_html = template_string
+        for key, value in kpi_dict.items():
+            final_html = final_html.replace(key, str(value))
+        
+        json_string = json.dumps(dados_graficos)
+        final_html = final_html.replace("__JSON_DATA_PLACEHOLDER__", json_string)
+        
+        output_filename = f"dashboard_{unidade_alvo.replace(' ', '_').replace('/', '_')}.html"
+        output_path = CONFIG.paths.docs_dir / output_filename
+        
+        with open(output_path, 'w', encoding='utf-8') as f: f.write(final_html)
+        logger.info(f"Dashboard para '{unidade_alvo}' salvo com sucesso em: '{output_path}'")
+    except Exception as e:
+        logger.exception(f"Ocorreu um erro ao gerar o HTML para '{unidade_alvo}': {e}")
 
     try:
         template_path = CONFIG.paths.base_dir / "dashboard_template.html"
@@ -126,10 +221,11 @@ def main():
     unidades_disponiveis = obter_unidades_disponiveis(df_base_total)
     unidades_a_gerar = []
     if args.unidade:
-        if args.unidade.upper() in unidades_disponiveis:
-            unidades_a_gerar = [args.unidade.upper()]
+        unidade_formatada = args.unidade.upper()
+        if unidade_formatada in unidades_disponiveis:
+            unidades_a_gerar = [unidade_formatada]
         else:
-            logger.error(f"Unidade '{args.unidade}' não encontrada. Disponíveis: {unidades_disponiveis}")
+            logger.error(f"Unidade '{args.unidade}' não encontrada. Disponíveis: {', '.join(unidades_disponiveis)}")
     elif args.todas:
         unidades_a_gerar = unidades_disponiveis
     else:

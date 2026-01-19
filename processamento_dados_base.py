@@ -61,16 +61,20 @@ def carregar_mapas_padronizacao() -> tuple[dict, dict]:
 def obter_dados_processados() -> pd.DataFrame | None:
     configurar_logger("processamento_base.log")
     carregar_drivers_externos()
-    mapa_unidade, mapa_natureza = carregar_mapas_padronizacao()
+    
+    # Carrega apenas o mapa de unidades, a natureza já vem tratada do banco.
+    mapa_unidade, _ = carregar_mapas_padronizacao()
 
     try:
         engine_db = get_conexao(CONFIG.conexoes["FINANCA_SQL"])
         PPA_FILTRO = os.getenv("PPA_FILTRO", 'PPA 2025 - 2025/DEZ')
         ANO_FILTRO = int(os.getenv("ANO_FILTRO", 2025))
+        
+        # A VIEW/Function agora retorna a coluna 'NATUREZA_FINAL' diretamente
         sql_query = "SELECT * FROM dbo.vw_Analise_Planejado_vs_Executado_v2(?, ?, ?)"
         params = (f'{ANO_FILTRO}-01-01', f'{ANO_FILTRO}-12-31', PPA_FILTRO)
         
-        logger.info("Carregando dados base da view...")
+        logger.info("Carregando dados base da view (com natureza já padronizada)...")
         df_base = pd.read_sql(sql_query, engine_db, params=params)
         logger.info("%d linhas carregadas.", len(df_base))
 
@@ -80,20 +84,21 @@ def obter_dados_processados() -> pd.DataFrame | None:
 
         logger.info("Iniciando padronização e categorização dos dados...")
         
-        df_base['nm_unidade_padronizada'] = df_base['UNIDADE'].astype(str).str.strip().str.upper()
+        # Padronização da UNIDADE continua sendo feita aqui
+        df_base['nm_unidade_padronizada'] = df_base['UNIDADE'].astype(str).str.replace('SP - ', '', regex=False).str.strip().str.upper()
         df_base['UNIDADE_FINAL'] = df_base['nm_unidade_padronizada'].map(mapa_unidade).fillna(df_base['nm_unidade_padronizada'])
         
-        df_base['Descricao_Natureza_Orcamentaria_std'] = df_base['Descricao_Natureza_Orcamentaria'].astype(str).str.strip().str.upper()
-        df_base['NATUREZA_FINAL'] = df_base['Descricao_Natureza_Orcamentaria_std'].map(mapa_natureza).fillna(df_base['Descricao_Natureza_Orcamentaria'])
-
+        # A padronização da NATUREZA foi REMOVIDA, pois a coluna NATUREZA_FINAL já vem pronta do SQL
+        
+        # O groupby para 'tipo_projeto' continua igual
         unidades_por_projeto = df_base.groupby('PROJETO')['nm_unidade_padronizada'].nunique()
         df_base['tipo_projeto'] = df_base['PROJETO'].map(unidades_por_projeto).apply(lambda x: 'Compartilhado' if x > 1 else 'Exclusivo')
         
-        # CORREÇÃO: Remove colunas intermediárias/originais para manter a base limpa
-        colunas_para_remover = ['UNIDADE', 'nm_unidade_padronizada', 'Descricao_Natureza_Orcamentaria', 'Descricao_Natureza_Orcamentaria_std']
+        # Remove colunas intermediárias/originais para manter a base limpa
+        colunas_para_remover = ['UNIDADE', 'nm_unidade_padronizada']
         df_base.drop(columns=[col for col in colunas_para_remover if col in df_base.columns], inplace=True)
         
-        logger.info("Processamento da base de dados concluído.")
+        logger.info("Processamento da base de dados (Python) concluído.")
         return df_base
 
     except Exception as e:

@@ -1,9 +1,10 @@
 # inicializacao.py
 import logging
-
 import clr
+from pathlib import Path
 
-# Importa a configuração centralizada para obter o caminho dos drivers.
+# A importação do 'config' não é mais necessária para o caminho da DLL,
+# mas pode ser mantida caso outros scripts a utilizem.
 from config import CONFIG
 
 logger = logging.getLogger(__name__)
@@ -11,35 +12,30 @@ logger = logging.getLogger(__name__)
 
 def carregar_drivers_externos() -> None:
     """
-    Localiza e carrega a DLL do AdomdClient necessária para a conexão OLAP.
-
-    Este processo é crítico para a aplicação, pois sem ele, a comunicação
-    com cubos do Analysis Services não é possível.
-
-    Raises:
-        FileNotFoundError: Se a DLL não for encontrada no local esperado.
-        Exception: Para outros erros durante o carregamento da DLL.
+    Localiza e carrega a DLL do AdomdClient necessária para a conexão OLAP,
+    utilizando o caminho absoluto da instalação do On-premises data gateway.
     """
     logger.info("Inicializando... Carregando drivers externos.")
-    caminho_dll = CONFIG.paths.drivers / "Microsoft.AnalysisServices.AdomdClient.dll"
 
+    # CAMINHO ALTERADO: Utilizando o caminho absoluto que você especificou.
+    # O uso de 'r' antes da string (raw string) previne erros com as barras invertidas '\'.
+    caminho_dll = Path(r"C:\Arquivos de Programas\On-premises data gateway\Microsoft.AnalysisServices.AdomdClient.dll")
+    
     try:
         if not caminho_dll.exists():
-            # Lança uma exceção clara que será capturada no main.py
-            raise FileNotFoundError(f"DLL não encontrada: {caminho_dll}")
+            logger.error("DLL não encontrada no caminho especificado: %s", caminho_dll)
+            logger.error("Por favor, verifique se o 'On-premises data gateway' da Microsoft está instalado corretamente neste local.")
+            raise FileNotFoundError(f"DLL do gateway não encontrada: {caminho_dll}")
 
         # Adiciona a referência à DLL para que o CLR (Common Language Runtime) a reconheça.
         clr.AddReference(str(caminho_dll))
-        logger.info("Driver AdomdClient carregado com sucesso na memória.")
+        logger.info("Driver AdomdClient carregado com sucesso a partir da pasta do gateway.")
 
     except Exception as e:
         logger.critical(
-            "Falha crítica ao carregar a DLL '%s'.", caminho_dll.name
+            "Falha crítica ao carregar a DLL a partir de '%s'.", caminho_dll
         )
         logger.critical(
-            "Verifique se o arquivo está na pasta 'drivers' e se foi 'Desbloqueado' "
-            "nas propriedades do arquivo no Windows."
+            "Verifique se o caminho está correto e se o usuário que executa o script tem permissão para acessar a pasta 'Arquivos de Programas'."
         )
-        # Relança a exceção para interromper a execução do programa de forma controlada.
         raise e
-
