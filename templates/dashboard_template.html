@@ -74,11 +74,12 @@
                 <p class="text-sm text-gray-500 mb-4">
                     Cruzamento da performance de execução (%) entre Projetos (linhas) e Naturezas Orçamentárias (colunas). Identifique rapidamente onde a execução está crítica (vermelho) ou saudável (verde).
                 </p>
-                <div id="heatmapProjetos" class="chart-container" style="height: 600px;">__HEATMAP_PLACEHOLDER__</div>
+                <div style="height: 600px; overflow: auto; -webkit-overflow-scrolling: touch;">
+                    <div id="heatmapProjetos">__HEATMAP_PLACEHOLDER__</div>
+                </div>
+
             </div>
         </div>
-        <!-- FIM DA NOVA SEÇÃO -->
-
     </main>
     
     <script id="data-island" type="application/json">__JSON_DATA_PLACEHOLDER__</script>

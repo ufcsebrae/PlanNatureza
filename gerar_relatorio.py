@@ -66,6 +66,7 @@ def gerar_relatorio_para_unidade(unidade_antiga: str, unidade_nova: str, df_base
     df_trend['Total'] = df_trend.sum(axis=1)
     dados_graficos['trend'] = {"labels": ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], "executed_total": df_trend['Total'].tolist(), "executed_exclusivo": df_trend.get('Exclusivo', pd.Series([0]*12)).tolist(), "executed_compartilhado": df_trend.get('Compartilhado', pd.Series([0]*12)).tolist()}
 
+    
     def criar_dados_treemap_com_projetos(df_source):
         if df_source is None or df_source.empty: return {}
         df_agg = df_source.groupby(['NATUREZA_FINAL', 'PROJETO'])['Valor_Executado'].sum().reset_index()
@@ -128,36 +129,42 @@ def gerar_relatorio_para_unidade(unidade_antiga: str, unidade_nova: str, df_base
     logger.info(f"[{unidade_nova}] Dados para os gráficos agregados.")
     
     # GERAÇÃO DO SUNBURST (PLOTLY)
+ # --- Geração dos Gráficos Plotly ---
     sunburst_html = '<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados de projetos exclusivos para exibir.</div>'
+    heatmap_html = '<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados de projetos exclusivos para exibir.</div>'
+
     if not df_exclusivos.empty:
         df_sun = df_exclusivos.groupby(['PROJETO', 'NATUREZA_FINAL']).agg({'Valor_Planejado': 'sum', 'Valor_Executado': 'sum'}).reset_index()
         df_sun = df_sun[df_sun['Valor_Planejado'] > 0]
         if not df_sun.empty:
             df_sun['perc_exec'] = (df_sun['Valor_Executado'] / df_sun['Valor_Planejado']) * 100
+            
+            # SUNBURST
             fig_sun = go.Figure()
             cores_projeto = df_sun.groupby('PROJETO').apply(lambda x: (x['Valor_Executado'].sum() / x['Valor_Planejado'].sum())*100 if x['Valor_Planejado'].sum() > 0 else 0, include_groups=False).tolist()
-            fig_sun.add_trace(go.Sunburst(
-                labels=df_sun['NATUREZA_FINAL'].tolist() + df_sun['PROJETO'].unique().tolist(),
-                parents=df_sun['PROJETO'].tolist() + [""] * df_sun['PROJETO'].nunique(),
-                values=df_sun['Valor_Planejado'].tolist() + df_sun.groupby('PROJETO')['Valor_Planejado'].sum().tolist(),
-                branchvalues='total',
-                marker=dict(colors=df_sun['perc_exec'].tolist() + cores_projeto, colorscale='RdYlGn', cmin=0, cmax=120, colorbar=dict(title='% Executado')),
-                hovertemplate='<b>%{label}</b><br>Planejado: %{value:,.2f}<br>Execução: %{color:.1f}%<extra></extra>',
-            ))
+            fig_sun.add_trace(go.Sunburst(labels=df_sun['NATUREZA_FINAL'].tolist() + df_sun['PROJETO'].unique().tolist(), parents=df_sun['PROJETO'].tolist() + [""] * df_sun['PROJETO'].nunique(), values=df_sun['Valor_Planejado'].tolist() + df_sun.groupby('PROJETO')['Valor_Planejado'].sum().tolist(), branchvalues='total', marker=dict(colors=df_sun['perc_exec'].tolist() + cores_projeto, colorscale='RdYlGn', cmin=0, cmax=120, colorbar=dict(title='% Executado')), hovertemplate='<b>%{label}</b><br>Planejado: %{value:,.2f}<br>Execução: %{color:.1f}%<extra></extra>'))
             fig_sun.update_layout(margin=dict(t=10, l=10, r=10, b=10))
             sunburst_html = fig_sun.to_html(full_html=False)
 
-    # GERAÇÃO DO HEATMAP (PLOTLY)
-    heatmap_html = '<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados de projetos exclusivos para exibir.</div>'
-    if not df_exclusivos.empty:
-        df_heat = df_exclusivos.groupby(['PROJETO', 'NATUREZA_FINAL']).agg({'Valor_Planejado': 'sum', 'Valor_Executado': 'sum'}).reset_index()
-        df_heat = df_heat[df_heat['Valor_Planejado'] > 0]
-        if not df_heat.empty:
-            df_heat['perc_exec'] = (df_heat['Valor_Executado'] / df_heat['Valor_Planejado']) * 100
-            pivot_df = df_heat.pivot_table(index='PROJETO', columns='NATUREZA_FINAL', values='perc_exec', fill_value=None)
-            fig_heat = go.Figure(data=go.Heatmap(z=pivot_df.values, x=pivot_df.columns, y=pivot_df.index, colorscale='RdYlGn', zmin=0, zmid=80, zmax=120, hovertemplate='Projeto: %{y}<br>Natureza: %{x}<br>Execução: %{z:.1f}%<extra></extra>', xgap=1, ygap=1))
-            fig_heat.update_layout(yaxis_nticks=len(pivot_df.index), xaxis_tickangle=-45, height=max(400, len(pivot_df.index) * 30), margin=dict(l=250))
-            heatmap_html = fig_heat.to_html(full_html=False)
+            # HEATMAP
+            pivot_df = df_sun.pivot_table(index='PROJETO', columns='NATUREZA_FINAL', values='perc_exec', fill_value=None)
+            if not pivot_df.empty:
+                
+                # --- ALTERAÇÃO PRINCIPAL: Cálculo de Altura Dinâmica ---
+                num_projetos = len(pivot_df.index)
+                # Damos 35px para cada projeto, com um mínimo de 400px de altura total
+                dynamic_height = max(400, num_projetos * 35)
+                
+                fig_heat = go.Figure(data=go.Heatmap(z=pivot_df.values, x=pivot_df.columns, y=pivot_df.index, colorscale='RdYlGn', zmin=0, zmid=80, zmax=120, hovertemplate='Projeto: %{y}<br>Natureza: %{x}<br>Execução: %{z:.1f}%<extra></extra>', xgap=1, ygap=1))
+                
+                # Usa a altura dinâmica no layout
+                fig_heat.update_layout(
+                    yaxis_nticks=num_projetos, 
+                    xaxis_tickangle=-45, 
+                    height=dynamic_height, 
+                    margin=dict(l=250) # Margem esquerda para nomes longos de projeto
+                )
+                heatmap_html = fig_heat.to_html(full_html=False)
 
     kpi_dict["__SUNBURST_PLACEHOLDER__"] = sunburst_html
     kpi_dict["__HEATMAP_PLACEHOLDER__"] = heatmap_html
