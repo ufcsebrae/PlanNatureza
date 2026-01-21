@@ -25,114 +25,61 @@
             <p id="unit-name" class="text-xl text-indigo-600 font-semibold mt-1">__UNIDADE_ALVO__</p>
         </div>
 
-        <!-- ... (Seção de KPIs e outros gráficos permanece a mesma) ... -->
+        <!-- KPIs -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="card text-center"><h2 class="kpi-title">Execução Total (Geral)</h2><p class="kpi-value"><span class="kpi-perc">__KPI_TOTAL_PERC__</span></p><p class="kpi-sub">__KPI_TOTAL_VALORES__</p></div>
+            <div class="card text-center"><h2 class="kpi-title">Projetos Exclusivos da Unidade</h2><p class="kpi-value"><span class="kpi-perc">__KPI_EXCLUSIVO_PERC__</span></p><p class="kpi-sub">__KPI_EXCLUSIVO_VALORES__</p></div>
+            <div class="card text-center"><h2 class="kpi-title">Projetos Compartilhados</h2><p class="kpi-value"><span class="kpi-perc">__KPI_COMPARTILHADO_PERC__</span></p><p class="kpi-sub">__KPI_COMPARTILHADO_VALORES__</p></div>
+        </div>
         
-        <!-- Heatmap Section -->
+        <!-- Outros Gráficos Chart.js -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Tendência de Execução Mensal</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Orçamento Ocioso por Projeto (Top 7)</h2><div class="chart-container"><canvas id="idleBudgetChart"></canvas></div></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Execução por Natureza (Projetos Exclusivos)</h2><div class="chart-container"><canvas id="treemapExclusivo"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Execução por Natureza (Projetos Compartilhados)</h2><div class="chart-container"><canvas id="treemapCompartilhado"></canvas></div></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Execução Sem Orçamento (Projetos Exclusivos)</h2><div class="chart-container"><canvas id="unplannedExclusivo"></canvas></div></div>
+            <div class="card"><h2 class="text-xl font-bold text-gray-800 mb-4">Execução Sem Orçamento (Projetos Compartilhados)</h2><div class="chart-container"><canvas id="unplannedCompartilhado"></canvas></div></div>
+        </div>
+
+        <!-- Seção de Análise de Projetos Exclusivos -->
+        <div class="grid grid-cols-1 gap-8 my-10">
+            <div class="card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Análise Detalhada de Projetos Exclusivos</h2>
+                <p class="text-sm text-gray-500 mb-6">As visualizações abaixo focam apenas nos projetos cuja gestão orçamentária é exclusiva da unidade, permitindo uma análise profunda de proporção e performance.</p>
+            </div>
+        </div>
+
+        <!-- Sunburst Chart -->
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Visão Hierárquica do Orçamento (Sunburst)</h2>
+                <p class="text-sm text-gray-500 mb-4">Distribuição do <strong>Valor Planejado</strong> (tamanho da fatia) por Projeto e Natureza. A cor indica o <strong>Percentual de Execução</strong> (quanto mais verde, melhor a execução).</p>
+                <div id="sunburstProjetos" class="chart-container" style="height: 500px;">__SUNBURST_PLACEHOLDER__</div>
+            </div>
+        </div>
+
+        <!-- Heatmap Chart (Versão Original) -->
         <div class="grid grid-cols-1 gap-8 mb-10">
             <div class="card">
                 <h2 class="text-xl font-bold text-gray-800 mb-2">Mapa de Performance (Heatmap)</h2>
                 <p class="text-sm text-gray-500 mb-4">Cruzamento da performance de execução (%) entre Projetos e Naturezas Orçamentárias.</p>
-                
-                <!-- ALTERAÇÃO PRINCIPAL AQUI -->
-
-                <!-- 1. Heatmap para Desktop (visível apenas em telas médias e grandes) -->
-                <div class="hidden md:block" style="overflow-x: auto; padding-bottom: 15px;">
-                    <div id="heatmapProjetos" class="chart-container" style="min-width: 800px; height: 600px;">__HEATMAP_PLACEHOLDER__</div>
-                </div>
-
-                <!-- 2. Lista Acordeão para Celular (visível apenas em telas pequenas) -->
-                <div id="heatmap-mobile-accordion" class="md:hidden space-y-2">
-                    <!-- O JavaScript irá popular esta área -->
-                </div>
-                
+                <div id="heatmapProjetos" class="chart-container" style="height: 600px;">__HEATMAP_PLACEHOLDER__</div>
             </div>
         </div>
-
     </main>
 
-    <!-- Ilha de dados JSON -->
+    <!-- Ilha de dados JSON para os gráficos Chart.js -->
     <script id="data-island" type="application/json">__JSON_DATA_PLACEHOLDER__</script>
-
-    <!-- Template para o item do acordeão (escondido) -->
-    <template id="accordion-item-template">
-        <div class="border border-gray-200 rounded-lg">
-            <button class="accordion-header flex justify-between items-center w-full p-4 text-left">
-                <span class="font-semibold text-gray-700 project-name"></span>
-                <span class="text-gray-500 transform transition-transform duration-200">&#9662;</span>
-            </button>
-            <div class="accordion-content hidden p-4 border-t border-gray-200">
-                <ul class="space-y-2 nature-list"></ul>
-            </div>
-        </div>
-    </template>
-    
-    <!-- Template para o item da lista de naturezas (escondido) -->
-    <template id="nature-list-item-template">
-         <li class="flex justify-between items-center text-sm">
-            <span class="text-gray-600 nature-name"></span>
-            <span class="font-bold nature-value"></span>
-        </li>
-    </template>
-
 
     <!-- Script para renderizar os gráficos -->
     <script>
-        // Lógica para renderizar os gráficos...
-        // ... (seu script JS existente para os outros gráficos) ...
-
-        // --- NOVO SCRIPT PARA O ACORDEÃO DO HEATMAP ---
-        function createHeatmapAccordion(plotlyData) {
-            if (!plotlyData || !plotlyData.z || !plotlyData.y || !plotlyData.x) return;
-
-            const accordionContainer = document.getElementById('heatmap-mobile-accordion');
-            const itemTemplate = document.getElementById('accordion-item-template');
-            const natureTemplate = document.getElementById('nature-list-item-template');
-
-            plotlyData.y.forEach((projectName, i) => {
-                const itemNode = itemTemplate.content.cloneNode(true);
-                const header = itemNode.querySelector('.accordion-header');
-                const content = itemNode.querySelector('.accordion-content');
-                const natureList = itemNode.querySelector('.nature-list');
-
-                itemNode.querySelector('.project-name').textContent = projectName;
-
-                plotlyData.x.forEach((natureName, j) => {
-                    const value = plotlyData.z[i][j];
-                    if (value !== null && value !== undefined) {
-                        const natureNode = natureTemplate.content.cloneNode(true);
-                        const valueEl = natureNode.querySelector('.nature-value');
-
-                        natureNode.querySelector('.nature-name').textContent = natureName;
-                        valueEl.textContent = `${value.toFixed(1)}%`;
-                        
-                        if (value < 50) { valueEl.style.color = '#ef4444'; } // Red
-                        else if (value < 85) { valueEl.style.color = '#f59e0b'; } // Amber
-                        else { valueEl.style.color = '#22c55e'; } // Green
-
-                        natureList.appendChild(natureNode);
-                    }
-                });
-
-                header.addEventListener('click', () => {
-                    content.classList.toggle('hidden');
-                    header.querySelector('span:last-child').classList.toggle('rotate-180');
-                });
-                
-                accordionContainer.appendChild(itemNode);
-            });
-        }
-        
-        // Extrai os dados do Plotly e chama a função do acordeão
-        try {
-            const plotlyDiv = document.getElementById('heatmapProjetos');
-            if (plotlyDiv && plotlyDiv.querySelector('.plotly-graph-div')) {
-                const plotlyData = JSON.parse(plotlyDiv.querySelector('.plotly-graph-div').getAttribute('data-plotly-graph-2d-array'));
-                createHeatmapAccordion(plotlyData.data[0]);
-            }
-        } catch (e) {
-            console.error("Erro ao processar dados do heatmap para a visão mobile:", e);
-        }
-
+        // Seu script JS original para renderizar os gráficos do Chart.js.
+        // Ele lerá os dados da "data-island" e populará os <canvas>.
     </script>
 </body>
 </html>
