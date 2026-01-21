@@ -5,6 +5,7 @@ import sys
 import pandas as pd
 import json
 import plotly.graph_objects as go
+import numpy as np 
 
 try:
     from processamento.processamento_dados_base import obter_dados_processados, formatar_brl
@@ -62,6 +63,62 @@ def gerar_relatorio_para_unidade(unidade_antiga: str, unidade_nova: str, df_base
     
     # --- Início da Geração de Dados para Gráficos ---
     dados_graficos = {}
+    inercia_html = '<div class="flex items-center justify-center h-full text-center text-gray-500">Sem dados de projetos exclusivos para calcular a inércia.</div>'
+    if not df_exclusivos.empty:
+        
+        def calcular_inercia(group):
+            plan_group = group[group['Valor_Planejado'] > 0]
+            if plan_group.empty: return np.nan
+            
+            mes_primeiro_plan = plan_group['MES'].min()
+
+            gasto_group = group[group['Valor_Executado'] > 0]
+            if gasto_group.empty: return np.nan
+            
+            mes_primeiro_gasto = gasto_group['MES'].min()
+            
+            return mes_primeiro_gasto - mes_primeiro_plan
+
+        # Agrupa por uma combinação única para calcular a inércia de cada um
+        df_inercia = df_exclusivos.groupby(['PROJETO', 'ACAO', 'NATUREZA_FINAL']).apply(calcular_inercia, include_groups=False)
+        df_inercia = df_inercia.dropna().reset_index(name='inercia_meses')
+        # Filtra apenas inércias positivas (atrasos reais)
+        df_inercia = df_inercia[df_inercia['inercia_meses'] > 0]
+
+        if not df_inercia.empty:
+            # Encontra o registro de maior inércia para cada natureza
+            idx_max_inercia = df_inercia.groupby('NATUREZA_FINAL')['inercia_meses'].idxmax()
+            df_maior_inercia_por_natureza = df_inercia.loc[idx_max_inercia]
+            
+            # Ordena do maior para o menor
+            df_maior_inercia_por_natureza = df_maior_inercia_por_natureza.sort_values(by='inercia_meses', ascending=False)
+            
+            # Prepara o texto para a tooltip
+            hover_text = [f"<b>Projeto:</b> {row['PROJETO']}<br><b>Atraso:</b> {row['inercia_meses']:.0f} meses" for index, row in df_maior_inercia_por_natureza.iterrows()]
+
+            fig_inercia = go.Figure()
+            fig_inercia.add_trace(go.Bar(
+                x=df_maior_inercia_por_natureza['inercia_meses'],
+                y=df_maior_inercia_por_natureza['NATUREZA_FINAL'],
+                orientation='h', # Gráfico de barras horizontais
+                marker_color='#ef4444', # Cor vermelha para indicar alerta
+                text=df_maior_inercia_por_natureza['inercia_meses'], # Mostra o número de meses na barra
+                textposition='outside',
+                hoverinfo='text',
+                hovertext=hover_text
+            ))
+
+            fig_inercia.update_layout(
+                title_text='Piores Atrasos (Inércia) por Natureza Orçamentária',
+                xaxis_title_text='Meses de Atraso para Iniciar o Gasto',
+                yaxis_title_text='Natureza Orçamentária',
+                plot_bgcolor='white',
+                yaxis=dict(autorange="reversed"), # A maior barra fica no topo
+                margin=dict(l=250) # Espaço para nomes longos de natureza
+            )
+            inercia_html = fig_inercia.to_html(full_html=False)
+
+    kpi_dict["__INERCIA_PLACEHOLDER__"] = inercia_html
     df_trend = df_unidade.groupby(['MES', 'tipo_projeto'])['Valor_Executado'].sum().unstack(fill_value=0).reindex(range(1, 13), fill_value=0)
     df_trend['Total'] = df_trend.sum(axis=1)
     dados_graficos['trend'] = {"labels": ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], "executed_total": df_trend['Total'].tolist(), "executed_exclusivo": df_trend.get('Exclusivo', pd.Series([0]*12)).tolist(), "executed_compartilhado": df_trend.get('Compartilhado', pd.Series([0]*12)).tolist()}

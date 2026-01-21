@@ -80,6 +80,18 @@
 
             </div>
         </div>
+        
+        <!-- NOVO CARD: Gráfico de Barras de Inércia -->
+        <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="card">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Gargalos de Execução (Inércia Máxima)</h2>
+                <p class="text-sm text-gray-500 mb-4">Mostra o maior tempo (em meses) que cada natureza orçamentária demorou para ter seu primeiro gasto após o planejamento, indicando os principais gargalos operacionais. Passe o mouse sobre a barra para ver o projeto responsável.</p>
+                <div id="inerciaBarChart" class="chart-container" style="height: 500px;">
+                    __INERCIA_PLACEHOLDER__
+                </div>
+            </div>
+        </div>
+        <!-- FIM DO NOVO CARD -->
     </main>
     
     <script id="data-island" type="application/json">__JSON_DATA_PLACEHOLDER__</script>
