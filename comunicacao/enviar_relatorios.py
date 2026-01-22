@@ -139,7 +139,7 @@ def preparar_e_enviar_email_por_unidade(unidade_antiga_nome: str, gerentes_info:
     else:
         screenshot_html_block = ""
 
-    assunto = f"📊 Gestão Transparente 2025: Base de Dados e Dashboard - {unidade_nova_nome}"
+    assunto = f"📊 Fechamento 2025: Base de Dados e Dashboard - {unidade_nova_nome}"
     tratamento = info_gerente.get('tratamento', 'Prezado(a)')
     nome_gerente = info_gerente.get('gerente', 'Gestor(a)')
 
@@ -154,17 +154,17 @@ def preparar_e_enviar_email_por_unidade(unidade_antiga_nome: str, gerentes_info:
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 680px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);">
                     <tr><td style="padding: 32px;">
                         <p style="margin: 0 0 24px 0; font-size: 18px; font-weight: 600; color: #0f172a;">{tratamento} {nome_gerente} e equipe,</p>
-                        <p style="margin: 0 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Dando continuidade ao nosso compromisso com a <b>democratização e a transparência de dados</b>, disponibilizamos o balanço atualizado da execução orçamentária de 2025 para sua unidade.</p>
-                        <p style="margin: 0 0 24px 0; font-size: 16px; color: #334155; line-height: 1.75;">Acreditamos que o acesso direto à informação qualificada é o que permite uma gestão mais ágil e assertiva na ponta. Por isso, este envio contempla duas frentes:</p>
+                        <p style="margin: 0 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Com a conclusão do fechamento orçamentário de 2025, <b>disponibilizamos os dados finais da execução orçamentária de 2025 da sua unidade</b></p>
+                        <p style="margin: 0 0 24px 0; font-size: 16px; color: #334155; line-height: 1.75;">Nosso objetivo é democratizar o acesso à informação para apoiar sua gestão. O acompanhamento está disponível em duas frentes:</p>
                         
                         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-                            <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">1. Visão Analítica (Self-Service)</p>
-                            <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.7;">Anexamos a base de dados completa em Excel. Este arquivo permite que você e sua equipe realizem filtros personalizados e análises específicas de acordo com a necessidade imediata da unidade.</p>
+                            <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">1. Painel Interativo (Dashboard)</p>
+                            <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.7;">Visão tática para análise rápida de tendências e desvios.</p>
                         </div>
                         
                         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                            <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">2. Visão Tática (Dashboard)</p>
-                            <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.7;">Para uma leitura rápida de tendências, desvios e saúde dos projetos através de indicadores visuais (Heatmaps e Sunburst), acesse o link abaixo. <b>O painel é responsivo</b> e pode ser visualizado com facilidade tanto em computadores quanto em dispositivos móveis (celular ou tablet).</p>
+                            <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">2. Base Analítica:</p>
+                            <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.7;">Arquivo em Excel (anexo) com o detalhamento completo para conferência e filtros personalizados.</p>
                         </div>
 
                         <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
@@ -178,6 +178,14 @@ def preparar_e_enviar_email_por_unidade(unidade_antiga_nome: str, gerentes_info:
                         
                         {screenshot_html_block}
 
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">O Dashboard interativo possui algumas nomenclaturas estão detalhadas abaixo:.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Projetos Exclusivos: São os projetos onde as ações são todas da sua unidade.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Projetos Compartilhado: São os projetos onde diversas unidades possuem orçamento. (ex: Contratos de segurança, limpeza, folha e etc).</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Orçamento Ocioso: É o saldo remanescente do Planejado no LEME subtraido do valor gasto.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Execução Sem Planejamento: Natureza não planejada no LEME, mas possui execução.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Visão Hierárquica do Orçamento (Sunburst): o circulo interno são os projetos, o externo as naturezas. As cores mostram a % de execução frente o planejado (quanto mais verde melhor), o tamanho dos discos são os valores em R$.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Mapa de Performance (Heatmap): explica o porquê, qual natureza específica traz a % de execução frente o planejado.</p>
+                        <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Inércia: maior tempo que cada natureza orçamentária demorou para ter seu primeiro gasto após o planejamento, indicando os principais gargalos operacionais.</p>
                         <p style="margin: 32px 0 16px 0; font-size: 16px; color: #334155; line-height: 1.75;">Este ecossistema de dados foi desenhado para que a informação não fique retida, mas sim circule, servindo de suporte estratégico para o alcance das nossas metas.</p>
                         <p style="margin: 0; font-size: 16px; color: #334155; line-height: 1.75;">Seguimos à disposição para apoiar na leitura técnica desses indicadores.</p>
 
