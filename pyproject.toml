@@ -1,0 +1,30 @@
+[project]
+name = "robo-analise-orcamentaria"
+version = "1.0.0"
+description = "Robô de análise de dados que gera relatórios interativos sobre a performance orçamentária."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietário" }
+authors = [
+  { name = "Cesar Augusto", email = "cesargl@sebraesp.com.br" },
+]
+
+dependencies = [
+    "pandas",
+    "pyodbc",
+    "python-dotenv",
+    "pyadomd",
+    "pythonnet",
+    "SQLAlchemy",
+    "numpy",
+    "thefuzz",
+    "python-Levenshtein",
+    "plotly",
+    "selenium",
+    "webdriver-manager",
+    "pywin32",
+    "openpyxl",
+]
+
+[tool.setuptools]
+packages = ["config", "comunicacao", "processamento", "visualizacao"]

@@ -1,4 +1,4 @@
-# config/config.py (VERSÃO FINAL COM CORREÇÃO DE NOME DO CACHE)
+# config/config.py (VERSÃO REATORADA)
 import os
 from pathlib import Path
 from dataclasses import dataclass
@@ -27,6 +27,7 @@ class Config:
         db_database_financa = os.getenv("DB_DATABASE_FINANCA")
         db_server_hub = os.getenv("DB_SERVER_HUB")
         db_database_hub = os.getenv("DB_DATABASE_HUB")
+        adomd_dll_path_str = os.getenv("ADOMD_DLL_PATH")
 
         if not db_server_financa or not db_server_hub:
             raise ValueError("Uma das variáveis de servidor ('DB_SERVER_FINANCA', 'DB_SERVER_HUB') não foi encontrada no .env.")
@@ -34,6 +35,10 @@ class Config:
         self.base_dir = Path(__file__).resolve().parent.parent
         self.paths = self._Paths(self.base_dir)
         self.paths.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # --- ALTERAÇÃO APLICADA ---
+        # Converte o caminho da DLL de string para Path, se existir
+        self.adomd_dll_path: Optional[Path] = Path(adomd_dll_path_str) if adomd_dll_path_str else None
 
         self.conexoes = {
             "FINANCA_SQL": DbConfig(
@@ -48,7 +53,6 @@ class Config:
                 banco=db_database_hub,
                 driver="ODBC Driver 18 for SQL Server"
             ),
-            # Corrigido para usar o nome correto do atributo
             "CacheDB": DbConfig(
                 tipo='sqlite',
                 caminho=self.paths.cache_db
@@ -66,23 +70,16 @@ class Config:
             self.templates_dir = self.base_dir / "templates"
             self.relatorios_excel_dir = self.docs_dir / "excel"
             self.queries_dir = self.base_dir / "queries"
-
             self.dados_dir = self.base_dir / "dados"
-            
-            # Aponta todos os arquivos para os diretórios corretos
             self.cache_dir = self.base_dir / "cache"
             self.cache_db = self.cache_dir / "local_cache.db"
             self.query_nacional = self.queries_dir / "nacional.sql"
             self.query_cc = self.queries_dir / "cc.sql"
-            
-            # Aponta todos os arquivos de dados para a pasta 'dados'
             self.gerentes_csv = self.dados_dir / "gerentes.csv"
             self.unidade_csv = self.dados_dir / "UNIDADE.CSV"
             self.natureza_csv = self.dados_dir / "NATUREZA.csv"
             self.mapa_correcoes = self.dados_dir / "mapa_correcoes.json"
 
-# --- Instância única da configuração ---
-CONFIG = Config()
 # --- Instância única da configuração ---
 CONFIG = Config()
 

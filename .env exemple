@@ -1,0 +1,15 @@
+# Conexões de Banco de Dados
+DB_SERVER_FINANCA="seu-servidor-financa"
+DB_DATABASE_FINANCA="FINANCA"
+DB_SERVER_HUB="seu-servidor-hub"
+DB_DATABASE_HUB="HubDados"
+
+# Filtros para Queries
+PPA_FILTRO="PPA 2025 - 2025/DEZ"
+ANO_FILTRO="2025"
+
+# Caminho para DLL do Analysis Services (se necessário)
+ADOMD_DLL_PATH="Caminho/Completo/Para/Microsoft.AnalysisServices.AdomdClient.dll"
+
+# URL para os dashboards publicados (Github Pages, etc.)
+GITHUB_PAGES_URL="https://seu-usuario.github.io/seu-repositorio/"
